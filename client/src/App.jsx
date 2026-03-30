@@ -3,6 +3,7 @@ import {
   SignedIn,
   SignedOut,
   RedirectToSignIn,
+  useAuth,
 } from "@clerk/clerk-react";
 
 import Landing from "./pages/Landing";
@@ -16,8 +17,14 @@ import RemoveBackground from "./pages/ai/RemoveBackground";
 import BlogTitles from "./pages/ai/BlogTitles";
 import ChatPage from "./pages/ai/chat/ChatPage";
 import CommunityPage from "./pages/ai/community/CommunityPage.jsx";
+import { useEffect } from "react";
 
 export default function App() {
+  const {getToken} = useAuth();
+  useEffect(()=> {
+    getToken().then((token)=> console.log(token));
+  },[])
+  
   return (
     <Routes>
       {/* PUBLIC ROUTE */}
