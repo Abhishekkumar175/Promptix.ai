@@ -1,6 +1,5 @@
 import { Outlet } from "react-router-dom";
 import Sidebar from "./dashboard/Sidebar";
-import TopNavbar from "./dashboard/TopNavbar";
 
 export default function AILayout() {
   return (
@@ -9,12 +8,9 @@ export default function AILayout() {
       <Sidebar />
 
       {/* Right Section */}
-      <div className="flex flex-col flex-1">
-        {/* Top Navbar (FIXED HEIGHT) */}
-        <TopNavbar />
-
+      <div className="flex flex-col flex-1 h-full overflow-hidden">
         {/* Scrollable Content */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto w-full h-full">
           <Outlet />
         </main>
       </div>

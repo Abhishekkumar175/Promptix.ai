@@ -14,7 +14,7 @@ export default function Navbar() {
 
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 40);
+      setScrolled(window.scrollY > 20);
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
@@ -25,48 +25,45 @@ export default function Navbar() {
       initial={{ y: -80, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.6 }}
-      className="fixed top-6 w-full z-50 px-6"
+      className="fixed top-0 inset-x-0 z-50 px-6"
     >
       <div
-        className={`max-w-6xl mx-auto flex items-center justify-between px-6 py-2 rounded-full transition-all duration-300
+        className={`max-w-6xl mx-auto flex items-center justify-between px-6 py-3 mt-4 rounded-2xl transition-all duration-500
         ${
           scrolled
-            ? "bg-white/5 backdrop-blur-xl border border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.4)]"
-            : "bg-white/3 backdrop-blur-md border border-white/5"
+            ? "bg-white/[0.06] backdrop-blur-2xl border border-white/[0.1] shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.05)]"
+            : "bg-white/[0.03] backdrop-blur-xl border border-white/[0.06] shadow-[0_4px_20px_rgba(0,0,0,0.2)]"
         }`}
       >
-        {/* PREMIUM LOGO */}
+        {/* LOGO */}
         <div
           onClick={() => navigate("/")}
-          className="cursor-pointer flex items-center gap-3 group/logo"
+          className="cursor-pointer flex items-center gap-2.5 group/logo"
         >
-          {/* Logo Mark */}
           <div className="relative">
-            <div className="absolute inset-0 bg-linear-to-r from-violet-600 to-indigo-600 rounded-[10px] blur-md opacity-40 group-hover/logo:opacity-80 transition-opacity duration-500" />
-            <div className="relative w-9 h-9 rounded-[10px] bg-linear-to-b from-white/10 to-transparent border border-white/20 flex items-center justify-center shadow-lg backdrop-blur-md">
-              <Command className="w-5 h-5 text-white/90 transform group-hover/logo:rotate-12 transition-transform duration-500" />
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-violet-500 rounded-full flex items-center justify-center shadow-[0_0_10px_rgba(139,92,246,0.8)]">
-                <Sparkles className="w-2 h-2 text-white" />
+            <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-indigo-600 rounded-xl blur-md opacity-30 group-hover/logo:opacity-60 transition-opacity duration-500" />
+            <div className="relative w-8 h-8 rounded-xl bg-gradient-to-b from-white/[0.08] to-[#0e142e] border border-white/[0.12] flex items-center justify-center shadow-lg">
+              <Command className="w-4 h-4 text-white/90" />
+              <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-violet-500 rounded-full flex items-center justify-center shadow-[0_0_8px_rgba(139,92,246,0.8)]">
+                <Sparkles className="w-1.5 h-1.5 text-white" />
               </div>
             </div>
           </div>
-          {/* Logo Text */}
           <div className="flex items-baseline">
-            <span className="text-xl font-extrabold tracking-tight text-white drop-shadow-sm">
-              Promptix
-            </span>
-            <span className="text-lg font-bold tracking-normal italic text-transparent bg-clip-text bg-linear-to-r from-violet-400 to-indigo-400 ml-0.5">
-              .ai
-            </span>
+            <span className="text-lg font-bold tracking-tight text-white">Promptix</span>
+            <span className="text-[15px] font-bold tracking-normal italic text-transparent bg-clip-text bg-linear-to-r from-violet-400 to-indigo-400 ml-0.5">
+                .ai
+              </span>
           </div>
         </div>
 
-        {/* CENTER NAV (Only when logged out) */}
+        {/* CENTER NAV */}
         {!user && (
-          <div className="hidden md:flex items-center gap-10 text-sm text-gray-300">
+          <div className="hidden md:flex items-center gap-8 text-[14px] text-gray-400">
             {[
               { label: "Home", id: "hero" },
-              { label: "AI Tools", id: "tools" },
+              { label: "Platform", id: "tools" },
+              { label: "Use Cases", id: "audience" },
               { label: "Pricing", id: "pricing" },
             ].map((item) => (
               <button
@@ -76,28 +73,23 @@ export default function Navbar() {
                     .getElementById(item.id)
                     ?.scrollIntoView({ behavior: "smooth" })
                 }
-                className="relative group transition"
+                className="hover:text-white transition-colors duration-200"
               >
-                <span className="group-hover:text-white transition">
-                  {item.label}
-                </span>
-
-                {/* Animated Underline */}
-                <span className="absolute left-0 -bottom-1 h-0.5 w-0 bg-linear-to-r from-violet-500 to-indigo-500 transition-all duration-300 group-hover:w-full" />
+                {item.label}
               </button>
             ))}
           </div>
         )}
 
-        {/* RIGHT SIDE */}
-        <div className="hidden md:flex items-center gap-4">
+        {/* RIGHT CTA */}
+        <div className="hidden md:flex items-center gap-3">
           {!isLoaded ? null : user ? (
             <UserButton
               afterSignOutUrl="/"
               appearance={{
                 elements: {
                   avatarBox:
-                    "w-9 h-9 ring-2 ring-violet-500/40 hover:ring-violet-500 transition",
+                    "w-8 h-8 ring-2 ring-violet-500/30 hover:ring-violet-500 transition",
                 },
               }}
             />
@@ -109,9 +101,9 @@ export default function Navbar() {
                   afterSignUpUrl: "/ai",
                 })
               }
-              className="px-6 py-2 rounded-full bg-linear-to-r from-violet-600 to-indigo-600 hover:scale-105 transition-all duration-300 shadow-[0_0_20px_rgba(139,92,246,0.4)]"
+              className="px-5 py-2 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-sm font-semibold hover:shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:scale-[1.03] transition-all duration-300"
             >
-              Sign In
+              Get Started
             </button>
           )}
         </div>

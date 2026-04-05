@@ -10,8 +10,8 @@ import {
   MessageCircle,
   Mic,
   Sparkles,
-  ChevronLeft,
-  ChevronRight,
+  PanelLeftClose,
+  PanelLeftOpen,
   Zap,
   Command
 } from "lucide-react";
@@ -22,7 +22,6 @@ const menu = [
   { name: "Chat", icon: MessageCircle, path: "/ai/chat" },
   { name: "Chat with PDF", icon: FileText, path: "/ai/pdf" },
   { name: "Image Studio", icon: Image, path: "/ai/image" },
-  { name: "Article Composer", icon: PenLine, path: "/ai/article" },
   { name: "Review Resume", icon: FileText, path: "/ai/review" },
   { name: "Mock Interview Bot", icon: Mic, path: "/ai/interview" },
   { name: "Prompt Templates", icon: LayoutTemplate, path: "/ai/templates" },
@@ -47,9 +46,9 @@ export default function Sidebar() {
         className="absolute -right-3.5 top-8 bg-[#0B101A] border border-white/10 rounded-full p-1 z-50 text-gray-400 hover:text-white hover:bg-violet-600 transition-all duration-300 shadow-[0_0_15px_rgba(0,0,0,0.5)] group"
       >
         {isCollapsed ? (
-          <ChevronRight size={16} className="group-hover:scale-110 transition-transform" />
+          <PanelLeftOpen size={16} className="group-hover:scale-110 transition-transform" />
         ) : (
-          <ChevronLeft size={16} className="group-hover:scale-110 transition-transform" />
+          <PanelLeftClose size={16} className="group-hover:scale-110 transition-transform" />
         )}
       </button>
 

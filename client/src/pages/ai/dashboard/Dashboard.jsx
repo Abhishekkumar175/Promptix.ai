@@ -1,7 +1,7 @@
 import { useUser, Protect } from "@clerk/clerk-react";
 import StatCard from "./StatCard";
 import RecentCreations from "./RecentCreations";
-import { Sparkles, Gem, PenLine, Image as ImageIcon, MessageCircle, ArrowRight, Zap, FileText } from "lucide-react";
+import { Sparkles, Gem, PenLine, Image as ImageIcon, MessageCircle, ArrowRight, Zap, FileText, LayoutTemplate } from "lucide-react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 
@@ -27,7 +27,7 @@ export default function Dashboard() {
     { title: "Start AI Chat", desc: "Interact with our smartest model", icon: MessageCircle, path: "/ai/chat", color: "from-violet-600 to-indigo-600", shadow: "shadow-violet-500/20" },
     { title: "Chat with PDF", desc: "Analyze any document instantly", icon: FileText, path: "/ai/pdf", color: "from-amber-600 to-orange-600", shadow: "shadow-amber-500/20" },
     { title: "Image Studio", desc: "Advanced AI canvas editor", icon: ImageIcon, path: "/ai/image", color: "from-fuchsia-600 to-pink-600", shadow: "shadow-fuchsia-500/20" },
-    { title: "Article Composer", desc: "Write SEO optimized blogs", icon: PenLine, path: "/ai/article", color: "from-cyan-600 to-blue-600", shadow: "shadow-cyan-500/20" }
+    { title: "Prompt Templates", desc: "Access high-value academic logic", icon: LayoutTemplate, path: "/ai/templates", color: "from-cyan-600 to-blue-600", shadow: "shadow-cyan-500/20" }
   ];
 
   return (
@@ -42,10 +42,10 @@ export default function Dashboard() {
           variants={containerVariants}
           initial="hidden"
           animate="show"
-          className="max-w-6xl mx-auto space-y-8"
+          className="max-w-6xl mx-auto space-y-6"
         >
           {/* PREMIUM WELCOME BANNER */}
-          <motion.div variants={itemVariants} className="relative rounded-3xl overflow-hidden border border-white/10 bg-white/[0.02] p-6 md:p-8 shadow-2xl group">
+          <motion.div variants={itemVariants} className="relative rounded-3xl overflow-hidden border border-white/10 bg-white/[0.02] p-4 md:p-6 shadow-2xl group">
             {/* Glossy overlay */}
             <div className="absolute inset-0 bg-linear-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
             <div className="absolute -top-24 -right-24 w-64 h-64 bg-violet-500/20 rounded-full blur-3xl pointer-events-none" />
@@ -123,12 +123,7 @@ export default function Dashboard() {
                     icon={<Sparkles className="text-violet-400 w-6 h-6" />}
                     color="bg-violet-600"
                   />
-                  <StatCard
-                    title="Current Plan"
-                    value={<Protect plan="premium" fallback={<span className="text-xl">Free Tier</span>}>Premium</Protect>}
-                    icon={<Gem className="text-indigo-400 w-6 h-6" />}
-                    color="bg-indigo-600"
-                  />
+                  
                </div>
             </motion.div>
           </div>

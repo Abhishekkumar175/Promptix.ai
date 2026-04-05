@@ -11,7 +11,6 @@ import AILayout from "./pages/ai/AILayout";
 import Dashboard from "./pages/ai/dashboard/DashBoard";
 import Page from "./pages/ai/resume-review/page.jsx";
 import GenerateImages from "./pages/ai/GenerateImages";
-import WriteArticle from "./pages/ai/WriteArticle";
 import PromptTemplates from "./pages/ai/PromptTemplates";
 import ChatWithPDF from "./pages/ai/ChatWithPDF";
 import MockInterview from "./pages/ai/MockInterview";
@@ -49,7 +48,6 @@ export default function App() {
         <Route path="chat" element={<ChatPage />} />
         <Route path="review" element={<Page />} />
         <Route path="image" element={<GenerateImages />} />
-        <Route path="article" element={<WriteArticle />} />
         <Route path="pdf" element={<ChatWithPDF />} />
         <Route path="templates" element={<PromptTemplates />} />
         <Route path="interview" element={<MockInterview />} />

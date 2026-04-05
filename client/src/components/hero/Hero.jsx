@@ -1,175 +1,124 @@
 import { motion } from "framer-motion";
-import Particles from "./Particles";
-
-const DUMMY_LOGOS = [
-  "Acme Corp", "Global Bank", "Nexus Industries", "Nova Startup", "Apex Tech"
-];
+import { useClerk, useUser } from "@clerk/clerk-react";
+import { ArrowRight, Sparkles } from "lucide-react";
+import dashboardImg from "../../assets/dashboard.png";
 
 export default function Hero() {
+  const { openSignIn } = useClerk();
+  const { user } = useUser();
+
   return (
-    <section id="hero" className="relative min-h-screen overflow-hidden flex flex-col items-center justify-center bg-black/50 pt-32 pb-20">
+    <section id="hero" className="relative overflow-hidden bg-[#0a0a0a] pt-36 pb-4">
+      
+      {/* Background subtle glow */}
+      <div className="absolute top-[5%] left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-[radial-gradient(ellipse_at_center,rgba(139,92,246,0.08)_0%,transparent_60%)] pointer-events-none z-0" />
 
-      <div className="absolute inset-0 z-10">
-        <Particles />
-      </div>
+      {/* ============ HERO TEXT ============ */}
+      <div className="relative z-10 text-center px-6 max-w-5xl mx-auto flex flex-col items-center">
 
-      <div className="relative z-30 text-center px-6 max-w-5xl mx-auto w-full flex-grow flex flex-col items-center justify-center">
-        {/* BADGE */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full 
-          bg-white/5 border border-white/10 backdrop-blur-md mb-8"
-        >
-          <span className="w-2 h-2 rounded-full bg-violet-400 animate-pulse" />
-          <span className="text-sm text-gray-300">All-in-one AI Platform</span>
-        </motion.div>
-
-        {/* HEADING */}
+        {/* Headline */}
         <motion.h1
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.1 }}
-          className="text-5xl md:text-7xl font-bold tracking-tight mb-6 text-white"
+          transition={{ duration: 0.7, delay: 0.2 }}
+          className="text-5xl md:text-7xl lg:text-[80px] font-extrabold tracking-[-0.04em] leading-[1.08] text-white mb-6"
         >
-          Build Faster with
-          <span className="block bg-linear-to-r from-violet-400 via-indigo-400 to-cyan-400 bg-[length:200%_auto] animate-gradient bg-clip-text text-transparent">
-            Powerful AI Tools
-          </span>
+          Learn smarter.
+          <br />
+          Build faster.
         </motion.h1>
 
-        {/* SUBTEXT */}
+        {/* Subtitle */}
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.25 }}
-          className="max-w-2xl mx-auto text-gray-400 text-lg mb-12"
+          transition={{ duration: 0.6, delay: 0.35 }}
+          className="max-w-2xl text-gray-400 text-lg md:text-xl leading-relaxed mb-10"
         >
-          Chat, generate content, analyze resumes, create images, and automate
-          your workflow — all under one intelligent dashboard.
+          One AI workspace for chat, PDF analysis, 
+          image generation, mock interviews, and more — everything you need to grow your skills.
         </motion.p>
 
-        {/* CTA */}
+        {/* CTA Buttons */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          className="mt-4 flex flex-col sm:flex-row justify-center gap-4 relative"
+          transition={{ duration: 0.5, delay: 0.5 }}
+          className="flex flex-col sm:flex-row items-center gap-4 mb-20"
         >
-          {/* Glowing CTA effect */}
           <div className="relative group">
-            <div className="absolute -inset-1 bg-linear-to-r from-purple-600 to-indigo-600 rounded-full blur opacity-40 group-hover:opacity-75 transition duration-1000 group-hover:duration-200 animate-pulse" />
-            <button className="relative px-8 py-4 rounded-full bg-linear-to-r from-purple-600 to-indigo-600 hover:scale-[1.02] transition shadow-[0_0_20px_rgba(139,92,246,0.3)] text-white font-medium">
-              Get Started Free
+            {/* Persistent pulsing glow behind button */}
+            <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-violet-600 via-indigo-500 to-violet-600 opacity-60 blur-lg group-hover:opacity-80 animate-[pulse_2s_ease-in-out_infinite]" />
+            <button
+              onClick={() => {
+                if (user) {
+                  window.location.href = "/ai";
+                } else {
+                  openSignIn({ afterSignInUrl: "/ai", afterSignUpUrl: "/ai" });
+                }
+              }}
+              className="relative px-8 py-3.5 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-semibold text-[15px] hover:shadow-[0_0_50px_rgba(139,92,246,0.4)] hover:scale-[1.03] transition-all duration-300 flex items-center gap-2"
+            >
+              Start building free
+              <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
-          <button className="px-8 py-4 rounded-full border border-white/20 hover:border-purple-400 hover:bg-white/5 transition text-white font-medium">
-            Explore Features
+          <button
+            onClick={() => document.getElementById("tools")?.scrollIntoView({ behavior: "smooth" })}
+            className="px-8 py-3.5 rounded-full border border-white/[0.12] text-white/80 font-medium text-[15px] hover:bg-white/[0.04] hover:text-white hover:border-white/20 transition-all duration-300"
+          >
+            Explore the platform
           </button>
         </motion.div>
-
-        {/* Hero Illustration / Dashboard Mockup */}
-        <motion.div 
-           initial={{ opacity: 0, y: 40 }}
-           animate={{ opacity: 1, y: 0 }}
-           transition={{ duration: 0.8, delay: 0.8 }}
-           className="mt-20 w-full max-w-4xl mx-auto relative hidden md:block"
-        >
-          <div className="absolute inset-x-10 -top-10 -bottom-10 bg-linear-to-b from-violet-500/20 to-transparent blur-3xl rounded-full z-0 pointer-events-none" />
-          
-          <div className="relative z-10 rounded-2xl border border-white/10 bg-[#0B0F19]/80 backdrop-blur-xl p-2 md:p-4 shadow-2xl overflow-hidden">
-            {/* Fake Window Header */}
-            <div className="flex items-center gap-2 mb-3 px-2">
-              <div className="w-3 h-3 rounded-full bg-red-500/80"></div>
-              <div className="w-3 h-3 rounded-full bg-yellow-500/80"></div>
-              <div className="w-3 h-3 rounded-full bg-green-500/80"></div>
-              <div className="ml-4 h-4 w-32 bg-white/5 rounded-full"></div>
-            </div>
-
-            {/* Fake App Layout */}
-            <div className="rounded-xl overflow-hidden border border-white/5 bg-[#05070B] aspect-[16/9] flex w-full relative group">
-              
-              {/* Fake Sidebar */}
-              <div className="w-1/4 border-r border-white/10 bg-white/5 p-4 flex flex-col gap-4">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-6 h-6 rounded-md bg-violet-500/50"></div>
-                  <div className="h-4 w-20 bg-white/20 rounded-md"></div>
-                </div>
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <div key={i} className={`h-8 rounded-md w-full flex items-center px-2 gap-2 ${i === 1 ? 'bg-violet-500/20 text-violet-300' : 'bg-transparent'}`}>
-                    <div className={`w-4 h-4 rounded-sm ${i === 1 ? 'bg-violet-400' : 'bg-white/10'}`}></div>
-                    <div className={`h-2 rounded-full ${i === 1 ? 'bg-violet-300/50 w-16' : 'bg-white/10 w-12'}`}></div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Fake Main Content */}
-              <div className="flex-1 p-6 flex flex-col justify-between">
-                <div>
-                  <div className="h-6 w-48 bg-white/10 rounded-md mb-8"></div>
-                  
-                  {/* Fake Grid / AI Outputs */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="h-24 bg-linear-to-br from-white/5 to-transparent border border-white/5 rounded-xl p-4 flex flex-col justify-between group-hover:border-violet-500/20 transition duration-500">
-                      <div className="h-3 w-1/3 bg-white/20 rounded-full"></div>
-                      <div className="h-2 w-full bg-white/5 rounded-full mt-auto"></div>
-                      <div className="h-2 w-2/3 bg-white/5 rounded-full mt-2"></div>
-                    </div>
-                    <div className="h-24 bg-linear-to-br from-white/5 to-transparent border border-white/5 rounded-xl p-4 flex flex-col justify-between group-hover:border-indigo-500/20 transition duration-500 delay-100">
-                      <div className="h-3 w-1/4 bg-white/20 rounded-full"></div>
-                      <div className="flex gap-2 mt-auto">
-                        <div className="w-8 h-8 rounded-md bg-white/5"></div>
-                        <div className="w-full h-8 rounded-md bg-white/5"></div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Fake Chart / Stats */}
-                  <div className="mt-6 h-32 w-full bg-linear-to-t from-violet-500/10 to-transparent border border-white/5 rounded-xl relative overflow-hidden flex items-end px-4 gap-2">
-                     <div className="w-full h-[30%] bg-violet-500/20 rounded-t-sm"></div>
-                     <div className="w-full h-[50%] bg-violet-500/30 rounded-t-sm"></div>
-                     <div className="w-full h-[80%] bg-violet-500/50 rounded-t-sm"></div>
-                     <div className="w-full h-[40%] bg-violet-500/20 rounded-t-sm"></div>
-                     <div className="w-full h-[60%] bg-violet-500/40 rounded-t-sm"></div>
-                     <div className="w-full h-[90%] bg-violet-500/60 rounded-t-sm shadow-[0_0_15px_rgba(139,92,246,0.5)]"></div>
-                     <div className="w-full h-[70%] bg-violet-500/40 rounded-t-sm"></div>
-                  </div>
-                </div>
-
-                {/* Fake ChatGPT style Input bar */}
-                <div className="h-12 w-full bg-white/5 border border-white/10 rounded-xl mt-6 flex items-center px-4 justify-between">
-                  <div className="h-3 w-40 bg-white/10 rounded-full"></div>
-                  <div className="h-6 w-6 bg-violet-500/50 rounded-md"></div>
-                </div>
-              </div>
-              
-              {/* Fake Glowing Orb inside the dashboard */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-violet-600/10 rounded-full blur-3xl pointer-events-none"></div>
-
-            </div>
-          </div>
-        </motion.div>
-        
-        {/* Trusted By Section */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1, delay: 1 }}
-          className="mt-24 w-full"
-        >
-          <p className="text-sm font-medium text-gray-500 tracking-wider mb-6 text-center uppercase">
-            Trusted by innovative teams worldwide
-          </p>
-          <div className="flex flex-wrap justify-center gap-8 md:gap-16 items-center opacity-50 grayscale hover:grayscale-0 transition duration-500">
-            {DUMMY_LOGOS.map((logo, i) => (
-              <div key={i} className="text-xl font-bold font-sans tracking-tighter text-white">
-                {logo}
-              </div>
-            ))}
-          </div>
-        </motion.div>
       </div>
+
+      {/* ============ DASHBOARD MOCKUP — Simple fade+slide animation ============ */}
+      <motion.div
+        initial={{ opacity: 0, y: 80 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 1, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        className="relative z-10 w-full max-w-6xl mx-auto px-6"
+      >
+        <div className="relative w-full">
+          {/* Animated glowing gradient border */}
+          <div className="absolute -inset-[2px] rounded-2xl bg-gradient-to-b from-violet-500/60 via-indigo-500/30 to-transparent opacity-70 blur-[1px] z-0 pointer-events-none animate-[pulse_3s_ease-in-out_infinite]" />
+          <div className="absolute -inset-[6px] rounded-2xl bg-gradient-to-b from-violet-500/25 via-indigo-500/10 to-transparent opacity-60 blur-xl z-0 pointer-events-none animate-[pulse_3s_ease-in-out_infinite]" />
+          
+          {/* Massive radial glow behind */}
+          <div className="absolute inset-x-[-5%] top-[10%] bottom-[-50%] bg-[radial-gradient(ellipse_at_center,rgba(139,92,246,0.25)_0%,rgba(79,70,229,0.1)_35%,transparent_65%)] blur-2xl pointer-events-none z-0" />
+
+          {/* Chrome Browser Shell */}
+          <div className="relative z-10 rounded-2xl border border-white/[0.1] bg-[#0d1117] shadow-[0_20px_80px_rgba(0,0,0,0.6)] overflow-hidden">
+            
+            {/* Window Title Bar */}
+            <div className="flex items-center gap-2 px-5 py-3 border-b border-white/[0.06] bg-[#161b22]/80">
+              <div className="flex gap-2">
+                <div className="w-3 h-3 rounded-full bg-[#ff5f57]"></div>
+                <div className="w-3 h-3 rounded-full bg-[#febc2e]"></div>
+                <div className="w-3 h-3 rounded-full bg-[#28c840]"></div>
+              </div>
+              <div className="flex-1 flex justify-center">
+                <div className="h-6 w-64 bg-white/[0.06] rounded-lg flex items-center justify-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-green-500/40 border border-green-500/60"></div>
+                  <span className="text-[11px] text-gray-400 font-mono">promptix.ai/dashboard</span>
+                </div>
+              </div>
+              <div className="w-20"></div>
+            </div>
+
+            {/* Real Dashboard Screenshot */}
+            <img 
+              src={dashboardImg} 
+              alt="Promptix AI Dashboard" 
+              className="w-full h-auto block"
+              loading="eager"
+            />
+          </div>
+
+          {/* Bottom fade */}
+          <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[#0a0a0a] to-transparent z-20 pointer-events-none" />
+        </div>
+      </motion.div>
     </section>
   );
 }
