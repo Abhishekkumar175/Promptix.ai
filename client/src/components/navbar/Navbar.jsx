@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import MobileMenu from "./MobileMenu";
 import { useClerk, UserButton, useUser } from "@clerk/clerk-react";
+import { Command, Sparkles } from "lucide-react";
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -34,14 +35,30 @@ export default function Navbar() {
             : "bg-white/3 backdrop-blur-md border border-white/5"
         }`}
       >
-        {/* LOGO */}
+        {/* PREMIUM LOGO */}
         <div
           onClick={() => navigate("/")}
-          className="cursor-pointer text-xl font-semibold tracking-tight"
+          className="cursor-pointer flex items-center gap-3 group/logo"
         >
-          <span className="bg-linear-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent">
-            Promptix.ai
-          </span>
+          {/* Logo Mark */}
+          <div className="relative">
+            <div className="absolute inset-0 bg-linear-to-r from-violet-600 to-indigo-600 rounded-[10px] blur-md opacity-40 group-hover/logo:opacity-80 transition-opacity duration-500" />
+            <div className="relative w-9 h-9 rounded-[10px] bg-linear-to-b from-white/10 to-transparent border border-white/20 flex items-center justify-center shadow-lg backdrop-blur-md">
+              <Command className="w-5 h-5 text-white/90 transform group-hover/logo:rotate-12 transition-transform duration-500" />
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-violet-500 rounded-full flex items-center justify-center shadow-[0_0_10px_rgba(139,92,246,0.8)]">
+                <Sparkles className="w-2 h-2 text-white" />
+              </div>
+            </div>
+          </div>
+          {/* Logo Text */}
+          <div className="flex items-baseline">
+            <span className="text-xl font-extrabold tracking-tight text-white drop-shadow-sm">
+              Promptix
+            </span>
+            <span className="text-lg font-bold tracking-normal italic text-transparent bg-clip-text bg-linear-to-r from-violet-400 to-indigo-400 ml-0.5">
+              .ai
+            </span>
+          </div>
         </div>
 
         {/* CENTER NAV (Only when logged out) */}
