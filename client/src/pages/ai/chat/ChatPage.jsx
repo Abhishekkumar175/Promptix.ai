@@ -145,7 +145,7 @@ export default function ChatPage() {
               setMessages(prev =>
                 prev.map(m =>
                   m.id === assistantMsgId
-                    ? { ...m, content: "⚠️ Sorry, something went wrong. Please try again.", streaming: false }
+                    ? { ...m, content: data.message || "⚠️ Sorry, something went wrong. Please try again.", streaming: false }
                     : m
                 )
               );
@@ -168,7 +168,7 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex h-full w-full bg-[#030712] overflow-hidden text-white relative">
+    <div className="flex flex-1 w-full bg-[#030712] overflow-hidden text-white relative">
 
       {/* Background ambient glows */}
       <div className="absolute top-0 right-1/4 w-[400px] h-[400px] bg-violet-600/10 rounded-full blur-[120px] pointer-events-none z-0" />

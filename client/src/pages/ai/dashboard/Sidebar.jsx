@@ -46,9 +46,9 @@ export default function Sidebar() {
         className="absolute -right-3.5 top-8 bg-[#0B101A] border border-white/10 rounded-full p-1 z-50 text-gray-400 hover:text-white hover:bg-violet-600 transition-all duration-300 shadow-[0_0_15px_rgba(0,0,0,0.5)] group"
       >
         {isCollapsed ? (
-          <PanelLeftOpen size={16} className="group-hover:scale-110 transition-transform" />
+          <PanelLeftOpen size={22} className="group-hover:scale-110 transition-transform" />
         ) : (
-          <PanelLeftClose size={16} className="group-hover:scale-110 transition-transform" />
+          <PanelLeftClose size={22} className="group-hover:scale-110 transition-transform" />
         )}
       </button>
 

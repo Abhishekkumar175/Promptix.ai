@@ -10,7 +10,7 @@ export default function AILayout() {
       {/* Right Section */}
       <div className="flex flex-col flex-1 h-full overflow-hidden">
         {/* Scrollable Content */}
-        <main className="flex-1 overflow-x-hidden overflow-y-auto w-full h-full">
+        <main className="flex-1 flex flex-col overflow-x-hidden overflow-y-auto w-full relative">
           <Outlet />
         </main>
       </div>

@@ -21,13 +21,19 @@ export function useApi() {
 
   const authFetch = async (url, options = {}) => {
     const token = await getToken();
+    const headers = {
+      Authorization: `Bearer ${token}`,
+      ...options.headers,
+    };
+
+    // Don't set Content-Type if we're sending FormData (browser needs to set it with boundary)
+    if (!(options.body instanceof FormData)) {
+      headers["Content-Type"] = "application/json";
+    }
+
     const res = await fetch(`${API_BASE}${url}`, {
       ...options,
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        ...options.headers,
-      },
+      headers,
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -40,6 +46,7 @@ export function useApi() {
     get: (url) => authFetch(url),
     post: (url, body) => authFetch(url, { method: "POST", body: JSON.stringify(body) }),
     del: (url) => authFetch(url, { method: "DELETE" }),
+    authFetch, // Expose for custom requests like FormData
     /**
      * SSE streaming fetch — returns a ReadableStreamDefaultReader
      * Caller is responsible for reading chunks.
