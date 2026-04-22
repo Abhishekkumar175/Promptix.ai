@@ -158,7 +158,7 @@ export default function ChatWithPDF() {
   };
 
   return (
-    <div className="h-[calc(100vh-64px)] w-full bg-[#030712] text-white flex flex-col relative overflow-hidden">
+    <div className="flex-1 w-full bg-[#030712] text-white flex flex-col relative overflow-hidden">
       
       {/* Background Glows */}
       <div className="absolute top-[-5%] left-[-10%] w-[500px] h-[500px] bg-cyan-600/10 rounded-full blur-[120px] pointer-events-none z-0" />
