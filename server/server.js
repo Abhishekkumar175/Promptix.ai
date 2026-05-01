@@ -4,6 +4,8 @@ import "dotenv/config";
 import { clerkMiddleware } from "@clerk/express";
 import chatRouter from "./routes/chatRoutes.js";
 import templateRouter from "./routes/templateRoutes.js";
+import pdfRouter from "./routes/pdfRoutes.js";
+import resumeRouter from "./routes/resumeRoutes.js";
 
 const app = express();
 
@@ -23,6 +25,8 @@ app.get("/", (req, res) => {
 // ── Routes ──
 app.use("/api/chat", chatRouter);           // Chat threads + SSE streaming
 app.use("/api/templates", templateRouter);  // Prompt templates (public browse)
+app.use("/api/pdf", pdfRouter);             // Chat with PDF (RAG)
+app.use("/api/resume", resumeRouter);       // Resume analysis
 
 // ── Global error handler ──
 app.use((err, req, res, next) => {

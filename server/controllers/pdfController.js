@@ -1,6 +1,6 @@
 import sql from "../configs/db.js";
 import { processDocument, findRelevantChunks } from "../services/pdfService.js";
-import { streamChat } from "../services/geminiService.js";
+import { streamChat } from "../services/aiService.js";
 
 // ── POST /api/pdf/upload ── Upload + start processing
 export const uploadPDF = async (req, res) => {
@@ -101,7 +101,7 @@ export const queryPDF = async (req, res) => {
 
   // Verify ownership + readiness
   const [file] = await sql`
-    SELECT id, file_name, status FROM pdf_files
+    SELECT id, file_name, status, full_text FROM pdf_files
     WHERE id = ${fileId} AND user_id = ${userId}
   `;
   if (!file) return res.status(404).json({ success: false, message: "File not found" });
@@ -117,33 +117,25 @@ export const queryPDF = async (req, res) => {
   res.flushHeaders();
 
   try {
-    // Find the most relevant chunks
-    const relevantChunks = await findRelevantChunks({ fileId, query: question, topK: 5 });
-
-    if (relevantChunks.length === 0) {
-      res.write(`data: ${JSON.stringify({ type: "token", content: "I couldn't find relevant content in the document for your question." })}\n\n`);
+    // Check if text exists
+    if (!file.full_text) {
+      res.write(`data: ${JSON.stringify({ type: "token", content: "Document has no text content." })}\n\n`);
       res.write(`data: ${JSON.stringify({ type: "done", citations: [] })}\n\n`);
       res.end();
       return;
     }
 
-    // Build context from retrieved chunks
-    const context = relevantChunks
-      .map((c, i) => `[Source ${i + 1} - Page ${c.page_number}]\n${c.content}`)
-      .join("\n\n---\n\n");
-
-    const systemPrompt = `You are an expert document analyst. Answer the user's question based ONLY on the provided document context below.
-- If the answer is in the context, cite which source/page it came from.
-- If the answer is NOT in the context, say "I couldn't find that in the document."
+    // Build context directly using Gemini 2.0's 1M context window
+    const systemPrompt = `You are an expert document analyst. Answer the user's question based ONLY on the provided document below.
 - Be concise, clear, and precise.
+- If the answer is in the document, summarize it with structural clarity.
+- If the answer is NOT in the document, say "I couldn't find that in the document."
 - Use markdown formatting for structured answers.
 
-Document: "${file.file_name}"
+Document Name: "${file.file_name}"
+Full Document Text:
+"${file.full_text.slice(0, 300000)}"`; // Cap at 300k chars for safety though 2.0 handles more
 
-Context from document:
-${context}`;
-
-    const citations = relevantChunks.map(c => `Page ${c.page_number}`);
     let fullResponse = "";
 
     await streamChat({
@@ -156,8 +148,7 @@ ${context}`;
       systemOverride: systemPrompt,
     });
 
-    // Send citations with done event
-    res.write(`data: ${JSON.stringify({ type: "done", citations: [...new Set(citations)] })}\n\n`);
+    res.write(`data: ${JSON.stringify({ type: "done", citations: ["Full Document"] })}\n\n`);
     res.end();
 
   } catch (err) {

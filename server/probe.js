@@ -1,19 +1,14 @@
 import "dotenv/config";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { streamChat } from "./services/aiService.js";
 
-async function probe() {
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-  const m = "gemini-2.0-flash";
-  
-  try {
-    const model = genAI.getGenerativeModel({ model: m });
-    const result = await model.generateContent("hi");
-    console.log(`✅ ${m}: OK - Response: "${result.response.text().slice(0, 10)}..."`);
-    process.exit(0);
-  } catch (e) {
-    console.log(`❌ ${m}: FAIL - ${e.message}`);
-    process.exit(1);
-  }
+async function run() {
+  console.log("Testing OpenRouter Key:", process.env.OPENROUTER_API_KEY ? "Loaded" : "Missing");
+  await streamChat({
+    history: [],
+    userMessage: "Reply with the word 'SUCCESS'",
+    onChunk: (c) => process.stdout.write(c)
+  });
+  console.log("\nDone!");
+  process.exit(0);
 }
-
-probe();
+run().catch(console.error);

@@ -1,5 +1,5 @@
 import sql from "../configs/db.js";
-import { streamChat, toGeminiHistory } from "../services/geminiService.js";
+import { streamChat, toAIHistory } from "../services/aiService.js";
 
 // ─── GET /api/chat/threads ─── List user's chat threads
 export const getThreads = async (req, res) => {
@@ -121,12 +121,12 @@ export const streamMessage = async (req, res) => {
       )
     `;
 
-    const geminiHistory = toGeminiHistory(prevMessages);
+    const aiHistory = toAIHistory(prevMessages);
     let fullResponse = "";
 
     // Stream response from Gemini
     await streamChat({
-      history: geminiHistory,
+      history: aiHistory,
       userMessage: message,
       onChunk: (text) => {
         fullResponse += text;

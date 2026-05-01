@@ -1,11 +1,11 @@
-import pdfParse from "pdf-parse/lib/pdf-parse.js";
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+const pdfParse = require("pdf-parse");
 import mammoth from "mammoth";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { openai, DEFAULT_MODEL } from "../services/aiService.js";
 import sql from "../configs/db.js";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
-// Multi-pass resume analysis with Gemini
+// Multi-pass resume analysis with AI
 export const analyzeResume = async (req, res) => {
   try {
     const { userId } = req.auth();
@@ -33,13 +33,21 @@ export const analyzeResume = async (req, res) => {
 
     // Trim to avoid token limits
     const trimmedResume = resumeText.slice(0, 8000);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+    const getCompletion = async (prompt) => {
+      const res = await openai.chat.completions.create({
+        model: DEFAULT_MODEL,
+        messages: [{ role: "user", content: prompt }],
+        response_format: { type: "json_object" }
+      });
+      return res.choices[0].message.content;
+    };
 
     // 2. Multi-pass analysis (3 focused prompts run in parallel)
     const [atsResult, contentResult, impactResult] = await Promise.all([
 
       // Pass 1: ATS Score + Keywords
-      model.generateContent(`Analyze this resume for ATS (Applicant Tracking System) compatibility.
+      getCompletion(`Analyze this resume for ATS (Applicant Tracking System) compatibility.
 ${jobDescription ? `Job Description to match against:\n${jobDescription}\n` : "Perform a general ATS analysis."}
 
 Resume:
@@ -54,7 +62,7 @@ Respond ONLY with this exact JSON (no markdown, no explanation):
 }`),
 
       // Pass 2: Section Quality
-      model.generateContent(`Analyze the quality of each section of this resume.
+      getCompletion(`Analyze the quality of each section of this resume.
 
 Resume:
 ${trimmedResume}
@@ -68,7 +76,7 @@ Respond ONLY with this exact JSON (no markdown):
 }`),
 
       // Pass 3: Impact & Formatting
-      model.generateContent(`Analyze this resume for impact, formatting, and overall quality.
+      getCompletion(`Analyze this resume for impact, formatting, and overall quality.
 
 Resume:
 ${trimmedResume}
@@ -82,13 +90,13 @@ Respond ONLY with this exact JSON (no markdown):
   "nextSteps": [<string>, <string>],
   "lengthAssessment": "<too short|optimal|too long>",
   "toneAssessment": "<professional|semi-professional|needs work>"
-}`),
+}`)
     ]);
 
     // 3. Parse all responses safely
-    const parseJSON = (result) => {
+    const parseJSON = (textResult) => {
       try {
-        const text = result.response.text().replace(/```json|```/g, "").trim();
+        const text = textResult.replace(/```json|```/g, "").trim();
         return JSON.parse(text);
       } catch {
         return {};

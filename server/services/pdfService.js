@@ -1,4 +1,6 @@
-import pdfParse from "pdf-parse/lib/pdf-parse.js";
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+const pdfParse = require("pdf-parse");
 import mammoth from "mammoth";
 import { getEmbedding } from "./embeddingService.js";
 import sql from "../configs/db.js";
@@ -55,35 +57,18 @@ export function chunkText(text) {
 export async function processDocument({ fileId, buffer, mimeType }) {
   try {
     const { text, pageCount } = await extractText(buffer, mimeType);
-    const chunks = chunkText(text);
-
-    // Embed all chunks (with a small delay to avoid rate limits)
-    for (const chunk of chunks) {
-      const embedding = await getEmbedding(chunk.content);
-
-      await sql`
-        INSERT INTO pdf_chunks (file_id, chunk_index, page_number, content, embedding)
-        VALUES (
-          ${fileId},
-          ${chunk.chunkIndex},
-          ${chunk.pageNumber},
-          ${chunk.content},
-          ${JSON.stringify(embedding)}
-        )
-      `;
-
-      // Small delay between embeddings to respect free tier rate limits
-      await new Promise(r => setTimeout(r, 200));
-    }
-
-    // Mark file as ready
+    
+    // Switch to Full-Context Analysis: Store full text directly in DB
+    // We ignore pdf_chunks for now as the user's API key has no embedding model
     await sql`
       UPDATE pdf_files
-      SET status = 'ready', page_count = ${pageCount}, chunk_count = ${chunks.length}
+      SET status = 'ready', 
+          page_count = ${pageCount}, 
+          full_text = ${text}
       WHERE id = ${fileId}
     `;
 
-    return { pageCount, chunkCount: chunks.length };
+    return { pageCount, chunkCount: 0 };
   } catch (err) {
     await sql`UPDATE pdf_files SET status = 'failed' WHERE id = ${fileId}`;
     throw err;
