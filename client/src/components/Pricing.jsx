@@ -10,9 +10,11 @@ const plans = [
     description: "Perfect for trying out Promptix and personal projects.",
     icon: Zap,
     features: [
-      "5 AI chat messages / day",
+      "10 AI chat messages / day",
       "Basic image generation",
       "1 PDF upload",
+      "Mock interview sessions",
+      "Resume review + ATS scoring",
       "Community access",
       "Standard response speed",
     ],
