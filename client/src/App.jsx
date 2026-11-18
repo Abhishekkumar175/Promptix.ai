@@ -3,7 +3,6 @@ import {
   SignedIn,
   SignedOut,
   RedirectToSignIn,
-  useAuth,
 } from "@clerk/clerk-react";
 
 import Landing from "./pages/Landing";
@@ -16,14 +15,8 @@ import ChatWithPDF from "./pages/ai/ChatWithPDF";
 import MockInterview from "./pages/ai/MockInterview";
 import ChatPage from "./pages/ai/chat/ChatPage";
 import CommunityPage from "./pages/ai/community/CommunityPage.jsx";
-import { useEffect } from "react";
 
 export default function App() {
-  const {getToken} = useAuth();
-  useEffect(()=> {
-    getToken().then((token)=> console.log(token));
-  },[])
-  
   return (
     <Routes>
       {/* PUBLIC ROUTE */}
