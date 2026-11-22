@@ -113,8 +113,6 @@ export default function Sidebar() {
                 {!isCollapsed && (
                   <span className="whitespace-nowrap flex-1">{item.name}</span>
                 )}
-                
-                {/* Optional fake "New" or "Beta" badge can be added conditionally later */}
               </>
             )}
           </NavLink>
