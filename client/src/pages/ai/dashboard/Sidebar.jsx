@@ -6,7 +6,6 @@ import {
   Image,
   FileText,
   Users,
-  LayoutTemplate,
   MessageCircle,
   Mic,
   Sparkles,
@@ -24,7 +23,6 @@ const menu = [
   { name: "Image Studio", icon: Image, path: "/ai/image" },
   { name: "Review Resume", icon: FileText, path: "/ai/review" },
   { name: "Mock Interview Bot", icon: Mic, path: "/ai/interview" },
-  { name: "Prompt Templates", icon: LayoutTemplate, path: "/ai/templates" },
   { name: "Community", icon: Users, path: "/ai/community" },
 ];
 

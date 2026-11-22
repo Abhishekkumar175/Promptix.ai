@@ -5,12 +5,17 @@ import remarkGfm from "remark-gfm";
 
 export default function ChatWindow({ messages, isStreaming, isLoadingMessages, onSendPrompt }) {
 
-  const bottomRef = useRef(null);
+  const scrollContainerRef = useRef(null);
 
-  // Auto-scroll to bottom on new messages
+  // Auto-scroll inside ChatWindow container ONLY (never outer page)
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({
+        top: scrollContainerRef.current.scrollHeight,
+        behavior: isStreaming ? "auto" : "smooth",
+      });
+    }
+  }, [messages, isStreaming]);
 
   if (isLoadingMessages) {
     return (
@@ -25,7 +30,7 @@ export default function ChatWindow({ messages, isStreaming, isLoadingMessages, o
   }
 
   return (
-    <div className="flex-1 overflow-y-auto w-full no-scrollbar px-4 md:px-0">
+    <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-y-auto w-full no-scrollbar px-4 md:px-6">
 
       {messages.length === 0 ? (
         // ── EMPTY STATE ──
@@ -59,23 +64,23 @@ export default function ChatWindow({ messages, isStreaming, isLoadingMessages, o
         </div>
       ) : (
         // ── MESSAGE LIST ──
-        <div className="max-w-3xl mx-auto py-8 lg:py-12 space-y-8">
+        <div className="max-w-3xl mx-auto py-6 space-y-6">
           {messages.map((msg, index) => (
             <div
               key={msg.id || index}
               className={`flex w-full ${msg.role === "user" ? "justify-end" : "justify-start"}`}
             >
               {msg.role === "assistant" ? (
-                <div className="flex gap-4 max-w-[88%]">
+                <div className="flex gap-3 sm:gap-4 max-w-[92%] sm:max-w-[85%]">
                   <div className="w-8 h-8 shrink-0 rounded-[8px] bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-md">
                     <Sparkles size={14} className="text-white" />
                   </div>
-                  <div className="pt-1 min-w-0">
-                    <h5 className="text-[13px] font-semibold text-gray-300 mb-2 uppercase tracking-wider">Promptix AI</h5>
+                  <div className="pt-1 min-w-0 flex-1">
+                    <h5 className="text-[12px] font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">Promptix AI</h5>
                     {/* Markdown renderer */}
-                    <div className="text-gray-200 leading-relaxed text-[15px] prose prose-invert prose-sm max-w-none
+                    <div className="text-gray-200 leading-relaxed text-[14px] sm:text-[15px] prose prose-invert prose-sm max-w-none break-words
                       prose-code:bg-white/[0.06] prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-violet-300
-                      prose-pre:bg-[#0d1117] prose-pre:border prose-pre:border-white/[0.06] prose-pre:rounded-xl
+                      prose-pre:bg-[#0d1117] prose-pre:border prose-pre:border-white/[0.06] prose-pre:rounded-xl prose-pre:overflow-x-auto
                       prose-headings:text-white prose-strong:text-white prose-a:text-violet-400">
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
                         {msg.content}
@@ -89,7 +94,7 @@ export default function ChatWindow({ messages, isStreaming, isLoadingMessages, o
                 </div>
               ) : (
                 // USER MESSAGE
-                <div className="bg-[#1e2434] border border-white/5 text-gray-100 rounded-2xl rounded-tr-sm px-5 py-3 max-w-[75%] shadow-md whitespace-pre-wrap leading-relaxed text-[15px]">
+                <div className="bg-[#1e2434] border border-white/5 text-gray-100 rounded-2xl rounded-tr-sm px-4 sm:px-5 py-2.5 sm:py-3 max-w-[85%] sm:max-w-[75%] shadow-md whitespace-pre-wrap leading-relaxed text-[14px] sm:text-[15px] break-words">
                   {msg.content}
                 </div>
               )}
@@ -109,8 +114,6 @@ export default function ChatWindow({ messages, isStreaming, isLoadingMessages, o
               </div>
             </div>
           )}
-
-          <div ref={bottomRef} />
         </div>
       )}
     </div>
