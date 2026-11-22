@@ -5,10 +5,20 @@ export default function ChatInput({ onSend, isTyping }) {
   const [text, setText] = useState("");
   const inputRef = useRef(null);
 
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.style.height = "auto";
+      inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 160)}px`;
+    }
+  }, [text]);
+
   const handleSend = () => {
     if (!text.trim() || isTyping) return;
     onSend({ role: "user", content: text });
     setText("");
+    if (inputRef.current) {
+      inputRef.current.style.height = "auto";
+    }
     
     // Auto focus back on input after sending
     setTimeout(() => {
