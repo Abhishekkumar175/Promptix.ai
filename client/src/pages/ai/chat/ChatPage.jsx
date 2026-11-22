@@ -1,255 +1,224 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
+import { useChat } from "../../../context/ChatContext";
 import ChatWindow from "./ChatWindow";
 import ChatInput from "./ChatInput";
-import ChatHistory from "./ChatHistory";
-import { PanelLeftClose, PanelLeftOpen, Plus } from "lucide-react";
-import { useApi } from "../../../hooks/useApi";
+import {
+  History,
+  Plus,
+  X,
+  MessageSquare,
+  Trash2,
+  Sparkles,
+  MessagesSquare,
+  Clock
+} from "lucide-react";
 
 export default function ChatPage() {
-  const api = useApi();
+  const {
+    threads,
+    activeThreadId,
+    messages,
+    isStreaming,
+    isLoadingMessages,
+    isLoadingThreads,
+    sendMessage,
+    selectThread,
+    createNewChat,
+    deleteThread,
+  } = useChat();
 
-  // ── State ──
-  const [threads, setThreads] = useState([]);          // list of threads from DB
-  const [activeThreadId, setActiveThreadId] = useState(null);
-  const [messages, setMessages] = useState([]);         // messages of active thread
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [isLoadingThreads, setIsLoadingThreads] = useState(true);
-  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const activeThread = threads.find((t) => t.id === activeThreadId);
 
-  // ── Load thread list on mount & handle responsive initial state ──
+  // Close drawer on Escape key
   useEffect(() => {
-    if (window.innerWidth < 768) {
-      setIsSidebarOpen(false);
-    }
-    loadThreads();
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") setIsDrawerOpen(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  const loadThreads = async () => {
-    try {
-      setIsLoadingThreads(true);
-      const { threads: data } = await api.get("/api/chat/threads");
-      setThreads(data);
-      // Auto-select first thread if any
-      if (data.length > 0 && !activeThreadId) {
-        selectThread(data[0].id);
-      }
-    } catch (err) {
-      console.error("Failed to load threads:", err);
-    } finally {
-      setIsLoadingThreads(false);
-    }
+  const handleSelectThread = (threadId) => {
+    selectThread(threadId);
+    setIsDrawerOpen(false);
   };
 
-  // ── Load messages when switching threads ──
-  const selectThread = useCallback(async (threadId) => {
-    if (threadId === activeThreadId) return;
-    if (window.innerWidth < 768) {
-      setIsSidebarOpen(false);
-    }
-    setActiveThreadId(threadId);
-    setMessages([]);
-    try {
-      setIsLoadingMessages(true);
-      const { messages: data } = await api.get(`/api/chat/threads/${threadId}/messages`);
-      // Normalize role: DB uses 'model', ChatWindow expects 'assistant'
-      setMessages(data.map(m => ({ ...m, role: m.role === "model" ? "assistant" : m.role })));
-    } catch (err) {
-      console.error("Failed to load messages:", err);
-    } finally {
-      setIsLoadingMessages(false);
-    }
-  }, [activeThreadId]);
-
-  // ── Create new thread ──
-  const createNewChat = async () => {
-    try {
-      const { thread } = await api.post("/api/chat/threads", { title: "New Chat" });
-      setThreads(prev => [thread, ...prev]);
-      setActiveThreadId(thread.id);
-      setMessages([]);
-    } catch (err) {
-      console.error("Failed to create thread:", err);
-    }
+  const handleCreateNewChat = () => {
+    createNewChat();
+    setIsDrawerOpen(false);
   };
-
-  // ── Delete thread ──
-  const deleteThread = async (id) => {
-    try {
-      await api.del(`/api/chat/threads/${id}`);
-      const remaining = threads.filter(t => t.id !== id);
-      setThreads(remaining);
-      if (activeThreadId === id) {
-        if (remaining.length > 0) {
-          selectThread(remaining[0].id);
-        } else {
-          setActiveThreadId(null);
-          setMessages([]);
-        }
-      }
-    } catch (err) {
-      console.error("Failed to delete thread:", err);
-    }
-  };
-
-  // ── Send message + stream response ──
-  const sendMessage = async ({ content }) => {
-    if (!content.trim() || isStreaming) return;
-
-    // If no thread, create one first
-    let threadId = activeThreadId;
-    if (!threadId) {
-      try {
-        const { thread } = await api.post("/api/chat/threads", { title: content.slice(0, 60) });
-        setThreads(prev => [thread, ...prev]);
-        setActiveThreadId(thread.id);
-        threadId = thread.id;
-      } catch (err) {
-        console.error("Failed to create thread:", err);
-        return;
-      }
-    }
-
-    // Optimistically show user message
-    const userMsg = { role: "user", content, id: Date.now() };
-    setMessages(prev => [...prev, userMsg]);
-    setIsStreaming(true);
-
-    // Placeholder for streaming assistant response
-    const assistantMsgId = Date.now() + 1;
-    setMessages(prev => [...prev, { role: "assistant", content: "", id: assistantMsgId, streaming: true }]);
-
-    try {
-      const reader = await api.stream(`/api/chat/threads/${threadId}/stream`, { message: content });
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const lines = decoder.decode(value, { stream: true }).split("\n");
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          try {
-            const data = JSON.parse(line.slice(6));
-            if (data.type === "token") {
-              setMessages(prev =>
-                prev.map(m =>
-                  m.id === assistantMsgId
-                    ? { ...m, content: m.content + data.content }
-                    : m
-                )
-              );
-            } else if (data.type === "done") {
-              // Mark as no longer streaming
-              setMessages(prev =>
-                prev.map(m => m.id === assistantMsgId ? { ...m, streaming: false } : m)
-              );
-              // Update thread title in sidebar (backend auto-titles on first msg)
-              loadThreads();
-            } else if (data.type === "error") {
-              setMessages(prev =>
-                prev.map(m =>
-                  m.id === assistantMsgId
-                    ? { ...m, content: data.message || "⚠️ Sorry, something went wrong. Please try again.", streaming: false }
-                    : m
-                )
-              );
-            }
-          } catch { /* skip malformed line */ }
-        }
-      }
-    } catch (err) {
-      console.error("Stream error:", err);
-      setMessages(prev =>
-        prev.map(m =>
-          m.id === assistantMsgId
-            ? { ...m, content: "⚠️ Connection error. Please try again.", streaming: false }
-            : m
-        )
-      );
-    } finally {
-      setIsStreaming(false);
-    }
-  };
-
-  const activeThread = threads.find(t => t.id === activeThreadId);
 
   return (
-    <div className="h-full w-full flex bg-[#030712] overflow-hidden text-white relative">
-
+    <div className="h-full w-full flex flex-col bg-[#030712] overflow-hidden text-white relative">
       {/* Background ambient glows */}
       <div className="absolute top-0 right-1/4 w-[400px] h-[400px] bg-violet-600/10 rounded-full blur-[120px] pointer-events-none z-0" />
       <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[120px] pointer-events-none z-0" />
 
-      {/* Mobile Backdrop */}
-      {isSidebarOpen && (
-        <div
-          onClick={() => setIsSidebarOpen(false)}
-          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-30 md:hidden"
-        />
-      )}
-
-      {/* LEFT SIDEBAR: Chat History */}
-      <div className={`
-        ${isSidebarOpen ? "w-[260px] translate-x-0" : "w-0 -translate-x-full md:translate-x-0"}
-        fixed md:relative inset-y-0 left-0 z-40 md:z-20
-        transition-all duration-300 ease-in-out
-        border-r border-[#1e2434] bg-[#050812] shrink-0 flex flex-col shadow-2xl md:shadow-none overflow-hidden
-      `}>
-        <div className="w-[260px] h-full flex flex-col shrink-0">
-          <ChatHistory
-            chats={threads.map(t => ({ id: t.id, title: t.title }))}
-            activeChatId={activeThreadId}
-            onSelect={selectThread}
-            onNewChat={createNewChat}
-            onDelete={deleteThread}
-            isLoading={isLoadingThreads}
-          />
-        </div>
-      </div>
-
-      {/* MAIN CHAT AREA */}
-      <div className="flex flex-col flex-1 h-full min-h-0 relative z-10 overflow-hidden">
-
-        {/* Top Header Bar */}
-        <header className="h-14 px-4 border-b border-white/5 bg-[#050812]/80 backdrop-blur-md flex items-center justify-between shrink-0 z-20">
-          <div className="flex items-center gap-3 min-w-0">
-            <button
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="p-2 text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-all"
-              title={isSidebarOpen ? "Close sidebar" : "Open sidebar"}
-            >
-              {isSidebarOpen ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
-            </button>
-            <div className="min-w-0">
-              <h2 className="text-sm font-semibold text-white truncate max-w-[180px] sm:max-w-md">
-                {activeThread?.title || "New Chat"}
-              </h2>
-            </div>
-          </div>
-
+      {/* TOP HEADER BAR */}
+      <header className="h-14 px-4 sm:px-6 border-b border-white/5 bg-[#050812]/80 backdrop-blur-md flex items-center justify-between shrink-0 z-20">
+        <div className="flex items-center gap-3 min-w-0">
+          {/* History Drawer Trigger Button */}
           <button
-            onClick={createNewChat}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-all shrink-0"
+            onClick={() => setIsDrawerOpen(true)}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-violet-500/30 text-gray-300 hover:text-white text-xs font-medium transition-all shadow-xs cursor-pointer group"
+            title="Open Chat History"
+          >
+            <History size={14} className="text-violet-400 group-hover:rotate-[-25deg] transition-transform duration-300" />
+            <span className="font-semibold">History</span>
+            {threads.length > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full bg-violet-600/25 border border-violet-500/30 text-[10px] font-mono text-violet-300">
+                {threads.length}
+              </span>
+            )}
+          </button>
+
+          <div className="w-[1px] h-4 bg-white/10 shrink-0" />
+
+          {/* Active Conversation Title */}
+          <div className="min-w-0 flex items-center gap-2">
+            <h1 className="text-sm font-semibold text-white truncate max-w-[160px] sm:max-w-xs md:max-w-md">
+              {activeThread?.title || "New Chat"}
+            </h1>
+          </div>
+        </div>
+
+        {/* Right Action: New Chat */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleCreateNewChat}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-200 hover:text-white bg-white/5 hover:bg-violet-600/20 border border-white/10 hover:border-violet-500/30 rounded-xl transition-all shadow-xs cursor-pointer"
             title="Start a new chat"
           >
-            <Plus size={14} />
+            <Plus size={14} className="text-violet-400" />
             <span className="hidden sm:inline">New Chat</span>
           </button>
-        </header>
+        </div>
+      </header>
 
-        {/* Scrollable Conversation */}
+      {/* MAIN CHAT CANVAS */}
+      <div className="flex-1 min-h-0 flex flex-col relative z-10 overflow-hidden">
         <ChatWindow
           messages={messages}
           isStreaming={isStreaming}
           isLoadingMessages={isLoadingMessages}
           onSendPrompt={sendMessage}
         />
-
-        {/* Input Bar */}
         <div className="p-3 sm:p-4 md:p-5 w-full max-w-3xl mx-auto shrink-0">
           <ChatInput onSend={sendMessage} isTyping={isStreaming} />
+        </div>
+      </div>
+
+      {/* ─── SLIDE-OVER HISTORY DRAWER ─── */}
+      {isDrawerOpen && (
+        <div
+          onClick={() => setIsDrawerOpen(false)}
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 transition-opacity animate-in fade-in duration-200"
+        />
+      )}
+
+      <div
+        className={`fixed inset-y-0 left-0 w-[320px] max-w-[85vw] bg-[#070b16] border-r border-[#1e2434] z-50 flex flex-col shadow-2xl transition-transform duration-300 ease-in-out ${
+          isDrawerOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        {/* Drawer Header */}
+        <div className="h-14 px-4 border-b border-white/10 flex items-center justify-between shrink-0 bg-[#050812]">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-violet-600/20 border border-violet-500/30 flex items-center justify-center">
+              <MessagesSquare size={14} className="text-violet-400" />
+            </div>
+            <h2 className="text-sm font-semibold text-white">Chat History</h2>
+            <span className="text-[10px] font-mono text-gray-500 bg-white/5 px-1.5 py-0.5 rounded">
+              {threads.length}
+            </span>
+          </div>
+
+          <button
+            onClick={() => setIsDrawerOpen(false)}
+            className="p-1.5 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+            title="Close (Esc)"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* New Chat Action */}
+        <div className="p-4 pb-2 shrink-0">
+          <button
+            onClick={handleCreateNewChat}
+            className="w-full relative group overflow-hidden rounded-xl bg-linear-to-r from-violet-600 to-indigo-600 p-[1px] shadow-lg shadow-violet-600/20 cursor-pointer"
+          >
+            <div className="flex items-center justify-center gap-2 bg-[#0B101A] group-hover:bg-transparent py-2.5 px-3 rounded-[11px] text-xs font-semibold text-white transition-colors duration-200">
+              <Plus size={14} className="text-violet-400 group-hover:text-white transition-colors" />
+              <span>Start New Chat</span>
+            </div>
+          </button>
+        </div>
+
+        {/* Section Label */}
+        <div className="px-4 pt-3 pb-1.5 flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-gray-500 shrink-0">
+          <span className="flex items-center gap-1.5">
+            <Clock size={11} />
+            Recent Conversations
+          </span>
+        </div>
+
+        {/* Scrollable Threads List */}
+        <div className="flex-1 overflow-y-auto no-scrollbar p-3 space-y-1">
+          {isLoadingThreads ? (
+            <div className="space-y-2 p-1">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-10 rounded-xl bg-white/[0.04] animate-pulse" />
+              ))}
+            </div>
+          ) : threads.length === 0 ? (
+            <div className="text-center py-12 px-4">
+              <MessageSquare size={28} className="mx-auto text-gray-600 mb-2 opacity-50" />
+              <p className="text-xs text-gray-400 font-medium">No previous chats</p>
+              <p className="text-[11px] text-gray-600 mt-1">Start a new conversation anytime.</p>
+            </div>
+          ) : (
+            threads.map((chat) => {
+              const isActive = activeThreadId === chat.id;
+              return (
+                <div
+                  key={chat.id}
+                  onClick={() => handleSelectThread(chat.id)}
+                  className={`group flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-200 ${
+                    isActive
+                      ? "bg-violet-600/20 text-white font-medium border border-violet-500/30 shadow-[0_0_15px_rgba(139,92,246,0.15)]"
+                      : "text-gray-300 hover:text-white hover:bg-white/[0.05] border border-transparent"
+                  }`}
+                >
+                  <MessageSquare
+                    size={15}
+                    className={`shrink-0 transition-colors ${
+                      isActive ? "text-violet-400" : "text-gray-500 group-hover:text-gray-300"
+                    }`}
+                  />
+                  <span className="truncate flex-1 text-xs tracking-wide">{chat.title}</span>
+
+                  {/* Delete button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteThread(chat.id);
+                    }}
+                    className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all cursor-pointer"
+                    title="Delete chat"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Drawer Footer Tip */}
+        <div className="p-3 border-t border-white/5 text-center text-[10px] text-gray-500 bg-[#050812]/50 shrink-0">
+          Press <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-gray-400 font-mono">Esc</kbd> to close
         </div>
       </div>
     </div>
