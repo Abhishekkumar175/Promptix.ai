@@ -51,7 +51,7 @@ export function useApi() {
      * SSE streaming fetch — returns a ReadableStreamDefaultReader
      * Caller is responsible for reading chunks.
      */
-    stream: async (url, body) => {
+    stream: async (url, body, signal) => {
       const token = await getToken();
       const res = await fetch(`${API_BASE}${url}`, {
         method: "POST",
@@ -60,6 +60,7 @@ export function useApi() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(body),
+        signal,
       });
       if (!res.ok) throw new Error(`Stream request failed: ${res.status}`);
       return res.body.getReader();

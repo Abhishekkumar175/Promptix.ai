@@ -25,6 +25,8 @@ export default function ChatPage() {
     selectThread,
     createNewChat,
     deleteThread,
+    stopGeneration,
+    regenerateLastResponse,
   } = useChat();
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -103,9 +105,14 @@ export default function ChatPage() {
           isStreaming={isStreaming}
           isLoadingMessages={isLoadingMessages}
           onSendPrompt={sendMessage}
+          onRegenerate={regenerateLastResponse}
         />
-        <div className="p-3 sm:p-4 md:p-5 w-full max-w-3xl mx-auto shrink-0">
-          <ChatInput onSend={sendMessage} isTyping={isStreaming} />
+        <div className="p-3 sm:p-4 md:p-5 w-full max-w-2xl mx-auto shrink-0">
+          <ChatInput
+            onSend={sendMessage}
+            isTyping={isStreaming}
+            onStop={stopGeneration}
+          />
         </div>
       </div>
 

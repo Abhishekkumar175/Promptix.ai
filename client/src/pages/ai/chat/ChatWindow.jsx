@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { Sparkles, Bot, Copy, Check } from "lucide-react";
+import { Sparkles, Bot, Copy, Check, RotateCcw } from "lucide-react";
 import MarkdownRenderer from "./MarkdownRenderer";
 
-function AssistantMessage({ msg }) {
+function AssistantMessage({ msg, isLast, onRegenerate }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -39,10 +39,10 @@ function AssistantMessage({ msg }) {
 
         {/* Message Action Toolbar (shown when not streaming) */}
         {!msg.streaming && msg.content && (
-          <div className="mt-3 flex items-center gap-2 pt-1 text-gray-500">
+          <div className="mt-3 flex items-center gap-1.5 pt-1 text-gray-500">
             <button
               onClick={handleCopy}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-md hover:bg-white/5 hover:text-gray-300 text-xs transition-colors cursor-pointer"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg hover:bg-white/5 hover:text-gray-300 text-xs transition-colors cursor-pointer"
               title="Copy response"
             >
               {copied ? (
@@ -57,6 +57,18 @@ function AssistantMessage({ msg }) {
                 </>
               )}
             </button>
+
+            {/* Regenerate Button (available on the last assistant response) */}
+            {isLast && onRegenerate && (
+              <button
+                onClick={onRegenerate}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg hover:bg-white/5 hover:text-gray-300 text-xs transition-colors cursor-pointer group/regen"
+                title="Regenerate this response"
+              >
+                <RotateCcw size={13} className="group-hover/regen:-rotate-45 transition-transform duration-200" />
+                <span className="text-[11px]">Regenerate</span>
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -64,7 +76,13 @@ function AssistantMessage({ msg }) {
   );
 }
 
-export default function ChatWindow({ messages, isStreaming, isLoadingMessages, onSendPrompt }) {
+export default function ChatWindow({
+  messages,
+  isStreaming,
+  isLoadingMessages,
+  onSendPrompt,
+  onRegenerate,
+}) {
   const scrollContainerRef = useRef(null);
 
   // Auto-scroll inside ChatWindow container ONLY (never outer page)
@@ -126,22 +144,33 @@ export default function ChatWindow({ messages, isStreaming, isLoadingMessages, o
         </div>
       ) : (
         // ── MESSAGE LIST ──
-        <div className="max-w-3xl mx-auto py-6 sm:py-8 space-y-6 sm:space-y-8">
-          {messages.map((msg, index) => (
-            <div
-              key={msg.id || index}
-              className={`flex w-full ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-            >
-              {msg.role === "assistant" ? (
-                <AssistantMessage msg={msg} />
-              ) : (
-                // USER MESSAGE BUBBLE
-                <div className="bg-[#1e2434] border border-white/10 text-gray-100 rounded-2xl rounded-tr-xs px-4 sm:px-5 py-2.5 sm:py-3 max-w-[85%] sm:max-w-[75%] shadow-md whitespace-pre-wrap leading-relaxed text-[14.5px] break-words">
-                  {msg.content}
-                </div>
-              )}
-            </div>
-          ))}
+        <div className="max-w-2xl mx-auto py-6 sm:py-8 space-y-6 sm:space-y-8">
+          {messages.map((msg, index) => {
+            const isLastAssistant =
+              msg.role === "assistant" &&
+              (index === messages.length - 1 ||
+                (index === messages.length - 2 && messages[messages.length - 1].role === "user"));
+
+            return (
+              <div
+                key={msg.id || index}
+                className={`flex w-full ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+              >
+                {msg.role === "assistant" ? (
+                  <AssistantMessage
+                    msg={msg}
+                    isLast={isLastAssistant}
+                    onRegenerate={onRegenerate}
+                  />
+                ) : (
+                  // USER MESSAGE BUBBLE
+                  <div className="bg-[#1e2434] border border-white/10 text-gray-100 rounded-2xl rounded-tr-xs px-4 sm:px-5 py-2.5 sm:py-3 max-w-[85%] sm:max-w-[75%] shadow-md whitespace-pre-wrap leading-relaxed text-[14.5px] break-words">
+                    {msg.content}
+                  </div>
+                )}
+              </div>
+            );
+          })}
 
           {/* Streaming dots (before first token arrives) */}
           {isStreaming && messages.at(-1)?.role !== "assistant" && (

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { useApi } from "../hooks/useApi";
 
 const ChatContext = createContext(null);
@@ -12,6 +12,21 @@ export function ChatProvider({ children }) {
   const [isStreaming, setIsStreaming] = useState(false);
   const [isLoadingThreads, setIsLoadingThreads] = useState(true);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+
+  // Ref to hold the active AbortController for cancelling in-flight streams
+  const abortControllerRef = useRef(null);
+
+  // ── Stop active generation ──
+  const stopGeneration = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setIsStreaming(false);
+    setMessages((prev) =>
+      prev.map((m) => (m.streaming ? { ...m, streaming: false } : m))
+    );
+  }, []);
 
   // ── Load threads on mount ──
   const loadThreads = useCallback(async () => {
@@ -37,6 +52,13 @@ export function ChatProvider({ children }) {
   // ── Select a thread and load its messages ──
   const selectThread = useCallback(async (threadId) => {
     if (threadId === activeThreadId) return;
+    // If currently streaming, stop it before switching
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setIsStreaming(false);
+
     setActiveThreadId(threadId);
     setMessages([]);
     try {
@@ -55,6 +77,13 @@ export function ChatProvider({ children }) {
 
   // ── Create new chat ──
   const createNewChat = useCallback(async () => {
+    // If currently streaming, stop it before creating new chat
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setIsStreaming(false);
+
     try {
       const { thread } = await api.post("/api/chat/threads", { title: "New Chat" });
       setThreads(prev => [thread, ...prev]);
@@ -88,7 +117,7 @@ export function ChatProvider({ children }) {
   }, [activeThreadId, api, selectThread]);
 
   // ── Send message and stream AI response ──
-  const sendMessage = useCallback(async ({ content }) => {
+  const sendMessage = useCallback(async ({ content, isRegenerate = false }) => {
     if (!content.trim() || isStreaming) return;
 
     let threadId = activeThreadId;
@@ -104,16 +133,37 @@ export function ChatProvider({ children }) {
       }
     }
 
-    // Optimistic user message
-    const userMsg = { role: "user", content, id: Date.now() };
-    setMessages(prev => [...prev, userMsg]);
+    // Set up AbortController for cancel capability
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    if (isRegenerate) {
+      // For regeneration: pop the last assistant message and place a fresh streaming one
+      setMessages((prev) => {
+        const list = [...prev];
+        if (list.length > 0 && list[list.length - 1].role === "assistant") {
+          list.pop();
+        }
+        return [
+          ...list,
+          { role: "assistant", content: "", id: Date.now(), streaming: true },
+        ];
+      });
+    } else {
+      // Normal send: optimistic user message + empty assistant placeholder
+      const userMsg = { role: "user", content, id: Date.now() };
+      const assistantMsg = { role: "assistant", content: "", id: Date.now() + 1, streaming: true };
+      setMessages((prev) => [...prev, userMsg, assistantMsg]);
+    }
+
     setIsStreaming(true);
 
-    const assistantMsgId = Date.now() + 1;
-    setMessages(prev => [...prev, { role: "assistant", content: "", id: assistantMsgId, streaming: true }]);
-
     try {
-      const reader = await api.stream(`/api/chat/threads/${threadId}/stream`, { message: content });
+      const reader = await api.stream(
+        `/api/chat/threads/${threadId}/stream`,
+        { message: content, regenerate: isRegenerate },
+        controller.signal
+      );
       const decoder = new TextDecoder();
 
       while (true) {
@@ -126,29 +176,34 @@ export function ChatProvider({ children }) {
           try {
             const data = JSON.parse(line.slice(6));
             if (data.type === "token") {
-              setMessages(prev =>
-                prev.map(m =>
-                  m.id === assistantMsgId ? { ...m, content: m.content + data.content } : m
-                )
-              );
+              setMessages((prev) => {
+                const lastIdx = prev.length - 1;
+                if (lastIdx < 0 || prev[lastIdx].role !== "assistant") return prev;
+                const updated = [...prev];
+                updated[lastIdx] = {
+                  ...updated[lastIdx],
+                  content: updated[lastIdx].content + data.content,
+                };
+                return updated;
+              });
             } else if (data.type === "done") {
-              setMessages(prev =>
-                prev.map(m => (m.id === assistantMsgId ? { ...m, streaming: false } : m))
+              setMessages((prev) =>
+                prev.map((m) => (m.streaming ? { ...m, streaming: false } : m))
               );
-              // Refresh thread title (backend auto-titles on first message)
+              // Refresh thread title in case backend auto-titled it
               loadThreads();
             } else if (data.type === "error") {
-              setMessages(prev =>
-                prev.map(m =>
-                  m.id === assistantMsgId
-                    ? {
-                        ...m,
-                        content: data.message || "⚠️ Sorry, something went wrong. Please try again.",
-                        streaming: false,
-                      }
-                    : m
-                )
-              );
+              setMessages((prev) => {
+                const lastIdx = prev.length - 1;
+                if (lastIdx < 0 || prev[lastIdx].role !== "assistant") return prev;
+                const updated = [...prev];
+                updated[lastIdx] = {
+                  ...updated[lastIdx],
+                  content: data.message || "⚠️ Sorry, something went wrong. Please try again.",
+                  streaming: false,
+                };
+                return updated;
+              });
             }
           } catch {
             /* skip malformed line */
@@ -156,18 +211,36 @@ export function ChatProvider({ children }) {
         }
       }
     } catch (err) {
+      if (err.name === "AbortError") {
+        // User voluntarily stopped generation — leave content as is, turn off streaming
+        return;
+      }
       console.error("Stream error:", err);
-      setMessages(prev =>
-        prev.map(m =>
-          m.id === assistantMsgId
-            ? { ...m, content: "⚠️ Connection error. Please try again.", streaming: false }
-            : m
-        )
-      );
+      setMessages((prev) => {
+        const lastIdx = prev.length - 1;
+        if (lastIdx < 0 || prev[lastIdx].role !== "assistant") return prev;
+        const updated = [...prev];
+        updated[lastIdx] = {
+          ...updated[lastIdx],
+          content: updated[lastIdx].content || "⚠️ Connection error. Please try again.",
+          streaming: false,
+        };
+        return updated;
+      });
     } finally {
       setIsStreaming(false);
+      abortControllerRef.current = null;
     }
   }, [activeThreadId, api, isStreaming, loadThreads]);
+
+  // ── Regenerate response for the last user prompt ──
+  const regenerateLastResponse = useCallback(() => {
+    if (isStreaming || messages.length === 0) return;
+    const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
+    if (lastUserMsg) {
+      sendMessage({ content: lastUserMsg.content, isRegenerate: true });
+    }
+  }, [isStreaming, messages, sendMessage]);
 
   return (
     <ChatContext.Provider
@@ -185,6 +258,8 @@ export function ChatProvider({ children }) {
         createNewChat,
         deleteThread,
         sendMessage,
+        stopGeneration,
+        regenerateLastResponse,
       }}
     >
       {children}
@@ -199,4 +274,3 @@ export function useChat() {
   }
   return context;
 }
-

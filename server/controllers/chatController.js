@@ -78,7 +78,7 @@ export const deleteThread = async (req, res) => {
 export const streamMessage = async (req, res) => {
   const { userId } = req.auth();
   const { threadId } = req.params;
-  const { message } = req.body;
+  const { message, regenerate = false } = req.body;
 
   if (!message?.trim()) {
     return res.status(400).json({ success: false, message: "Message is required" });
@@ -98,11 +98,24 @@ export const streamMessage = async (req, res) => {
   res.flushHeaders();
 
   try {
-    // Save user message to DB
-    await sql`
-      INSERT INTO chat_messages (thread_id, role, content)
-      VALUES (${threadId}, 'user', ${message})
-    `;
+    if (regenerate) {
+      // For regeneration: delete the previous assistant response so it gets cleanly replaced
+      await sql`
+        DELETE FROM chat_messages
+        WHERE id = (
+          SELECT id FROM chat_messages
+          WHERE thread_id = ${threadId} AND role = 'model'
+          ORDER BY created_at DESC
+          LIMIT 1
+        )
+      `;
+    } else {
+      // Save user message to DB
+      await sql`
+        INSERT INTO chat_messages (thread_id, role, content)
+        VALUES (${threadId}, 'user', ${message})
+      `;
+    }
 
     // Load conversation history (last 20 messages for context window)
     const history = await sql`
