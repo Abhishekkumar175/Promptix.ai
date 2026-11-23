@@ -80,6 +80,11 @@ CRITICAL INSTRUCTIONS:
 3. Formatting: Use rich, clear Markdown formatting. Use bolding for key terms, bullet points for lists, and tables for comparative data.
 4. Completeness: If asked for a summary, provide a comprehensive, well-structured executive summary covering main points, methodology, and key takeaways.
 5. Honesty: If the question cannot be answered from the document, clearly state that the document does not contain this information, but provide any relevant context if available.
+6. Follow-up Suggestions: At the very end of your response, suggest exactly 2 or 3 insightful, concise follow-up questions that the user might want to explore next based on this document and your answer. Format them strictly at the end preceded by "===FOLLOW_UPS===" on its own line, like this:
+===FOLLOW_UPS===
+- First follow-up question?
+- Second follow-up question?
+- Third follow-up question?
 
 === DOCUMENT CONTENT START ===
 ${documentText}
