@@ -1,479 +1,895 @@
-import { useState, useRef, useEffect } from "react";
-import { 
-  FileText, UploadCloud, Search, Zap, CheckCircle2,
-  Database, ScrollText, Send, Loader2, Sparkles, Files, Info
-} from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { useAuth } from "@clerk/clerk-react";
 import { useApi } from "../../hooks/useApi";
+import MarkdownRenderer from "./chat/MarkdownRenderer";
+import {
+  FileText,
+  UploadCloud,
+  FolderOpen,
+  Plus,
+  Trash2,
+  X,
+  Send,
+  Square,
+  Sparkles,
+  BookOpen,
+  ArrowRight,
+  ExternalLink,
+  Loader2,
+  Copy,
+  Check,
+  RotateCcw,
+  Clock,
+  ChevronLeft,
+  ChevronRight,
+  Maximize2,
+  HelpCircle,
+  FileSearch,
+} from "lucide-react";
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { staggerChildren: 0.15 } }
-};
+const API_BASE = "http://localhost:3000";
 
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
-};
-
-const MODES = [
-  { id: "fast", label: "Fast Read", icon: Zap },
-  { id: "deep", label: "Deep Context", icon: Database }
+const QUICK_PROMPTS = [
+  "Summarize this entire document in key takeaways",
+  "What are the main methodology and findings?",
+  "Extract all key data, numbers, and conclusions",
+  "List the strengths, limitations, and future scope",
 ];
+
+function formatBytes(bytes, decimals = 1) {
+  if (!bytes) return "0 B";
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
+}
 
 export default function ChatWithPDF() {
   const api = useApi();
-  const [file, setFile] = useState(null);
-  const [activeFileId, setActiveFileId] = useState(null);
-  const [mode, setMode] = useState("deep");
-  
-  const [sessionState, setSessionState] = useState("idle"); // idle | analyzing | active
+  const { getToken } = useAuth();
+
+  // Documents state
+  const [files, setFiles] = useState([]);
+  const [activeFile, setActiveFile] = useState(null);
+  const [activeFileBlobUrl, setActiveFileBlobUrl] = useState(null);
+  const [isLoadingPdf, setIsLoadingPdf] = useState(false);
+  const [isLoadingFiles, setIsLoadingFiles] = useState(true);
+
+  // Chat state
   const [messages, setMessages] = useState([]);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [inputVal, setInputVal] = useState("");
-  const [isAiTyping, setIsAiTyping] = useState(false);
-  const [fileStats, setFileStats] = useState({ pages: 0, chunks: 0 });
+  const [isStreaming, setIsStreaming] = useState(false);
+
+  // UI state
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadStatusText, setUploadStatusText] = useState("");
+  const [copiedId, setCopiedId] = useState(null);
+  const [mobileTab, setMobileTab] = useState("chat"); // 'pdf' | 'chat'
 
   const chatEndRef = useRef(null);
+  const inputRef = useRef(null);
+  const abortControllerRef = useRef(null);
+  const fileInputRef = useRef(null);
 
-  // Auto scroll logic for chat module
+  // Auto-scroll chat
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isAiTyping]);
+  }, [messages, isStreaming]);
 
-  // Polling for file status
-  useEffect(() => {
-    let pollInterval;
-    if (sessionState === "analyzing" && activeFileId) {
-      pollInterval = setInterval(async () => {
-        try {
-          const { file } = await api.get(`/api/pdf/files/${activeFileId}/status`);
-          if (file.status === "ready") {
-            setFileStats({ pages: file.page_count, chunks: file.chunk_count });
-            setSessionState("active");
-            setMessages([
-              { 
-                role: "ai", 
-                text: `Document matched and tokenized successfully. I've processed ${file.page_count} pages into ${file.chunk_count} high-dimensional semantic chunks. Ask me anything about this document.` 
-              }
-            ]);
-            clearInterval(pollInterval);
-          } else if (file.status === "failed") {
-            setSessionState("idle");
-            alert("Analysis failed. Please try a different PDF.");
-            clearInterval(pollInterval);
-          }
-        } catch (err) {
-          console.error("Polling error:", err);
-        }
-      }, 3000);
-    }
-    return () => clearInterval(pollInterval);
-  }, [sessionState, activeFileId]);
-
-  const handleUpload = async () => {
-    if (!file) return;
-    
+  // Load user's documents on mount
+  const loadFiles = useCallback(async () => {
     try {
-      setSessionState("analyzing");
-      const formData = new FormData();
-      formData.append("file", file);
+      setIsLoadingFiles(true);
+      const res = await api.get("/api/pdf/files");
+      if (res.success) {
+        setFiles(res.files || []);
+        // If no active file, select the most recent ready file
+        if (!activeFile && res.files && res.files.length > 0) {
+          const firstReady = res.files.find((f) => f.status === "ready") || res.files[0];
+          selectDocument(firstReady);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load documents:", err);
+    } finally {
+      setIsLoadingFiles(false);
+    }
+  }, [api]);
 
-      const data = await api.authFetch("/api/pdf/upload", {
+  useEffect(() => {
+    loadFiles();
+  }, []);
+
+  // Escape key closes drawer
+  useEffect(() => {
+    const handleKey = (e) => {
+      if (e.key === "Escape") setIsDrawerOpen(false);
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, []);
+
+  // Load PDF binary blob for viewing in iframe
+  const loadPdfView = async (fileId) => {
+    try {
+      setIsLoadingPdf(true);
+      if (activeFileBlobUrl) {
+        URL.revokeObjectURL(activeFileBlobUrl);
+      }
+      const token = await getToken();
+      const res = await fetch(`${API_BASE}/api/pdf/files/${fileId}/view`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Could not load document preview");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      setActiveFileBlobUrl(url);
+    } catch (err) {
+      console.error("Failed to fetch PDF preview:", err);
+    } finally {
+      setIsLoadingPdf(false);
+    }
+  };
+
+  // Load chat history for a document
+  const loadMessages = async (fileId) => {
+    try {
+      setIsLoadingMessages(true);
+      const res = await api.get(`/api/pdf/files/${fileId}/messages`);
+      if (res.success) {
+        setMessages(res.messages || []);
+      }
+    } catch (err) {
+      console.error("Failed to load PDF messages:", err);
+      setMessages([]);
+    } finally {
+      setIsLoadingMessages(false);
+    }
+  };
+
+  // Switch active document
+  const selectDocument = async (file) => {
+    if (!file) return;
+    setActiveFile(file);
+    setIsDrawerOpen(false);
+    loadPdfView(file.id);
+    loadMessages(file.id);
+  };
+
+  // Upload handler
+  const handleUpload = async (fileToUpload) => {
+    if (!fileToUpload) return;
+    try {
+      setIsUploading(true);
+      setUploadStatusText("Uploading document...");
+
+      const formData = new FormData();
+      formData.append("file", fileToUpload);
+
+      const res = await api.authFetch("/api/pdf/upload", {
         method: "POST",
         body: formData,
       });
 
-      if (data.success) {
-        setActiveFileId(data.file.id);
-      } else {
-        throw new Error(data.message);
-      }
+      if (!res.success) throw new Error(res.message);
+
+      const newFileId = res.file.id;
+      setUploadStatusText("Processing with Gemini 1M Context...");
+
+      // Poll until status is 'ready'
+      const pollInterval = setInterval(async () => {
+        try {
+          const statusRes = await api.get(`/api/pdf/files/${newFileId}/status`);
+          if (statusRes.file?.status === "ready") {
+            clearInterval(pollInterval);
+            setIsUploading(false);
+            setUploadStatusText("");
+
+            // Reload file list & select this new file
+            const updated = await api.get("/api/pdf/files");
+            if (updated.success) {
+              setFiles(updated.files || []);
+              const current = updated.files.find((f) => f.id === newFileId);
+              if (current) selectDocument(current);
+            }
+          } else if (statusRes.file?.status === "failed") {
+            clearInterval(pollInterval);
+            setIsUploading(false);
+            alert("Document analysis failed. Please try a different PDF.");
+          }
+        } catch (e) {
+          console.error("Status poll error:", e);
+        }
+      }, 1500);
     } catch (err) {
-      console.error("Upload failed:", err);
-      setSessionState("idle");
+      console.error("Upload error:", err);
       alert(err.message || "Failed to upload document");
+      setIsUploading(false);
+      setUploadStatusText("");
     }
   };
 
-  const handleSendMessage = async () => {
-    if (!inputVal.trim() || sessionState !== "active" || !activeFileId) return;
+  // Delete document
+  const handleDeleteDocument = async (fileId, e) => {
+    e.stopPropagation();
+    if (!window.confirm("Are you sure you want to delete this document and its conversation history?")) return;
+    try {
+      await api.del(`/api/pdf/files/${fileId}`);
+      setFiles((prev) => prev.filter((f) => f.id !== fileId));
+      if (activeFile?.id === fileId) {
+        const remaining = files.filter((f) => f.id !== fileId);
+        if (remaining.length > 0) {
+          selectDocument(remaining[0]);
+        } else {
+          setActiveFile(null);
+          setActiveFileBlobUrl(null);
+          setMessages([]);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to delete document:", err);
+      alert("Failed to delete document.");
+    }
+  };
 
-    const userText = inputVal;
+  // Stop Generation
+  const handleStop = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setIsStreaming(false);
+  };
+
+  // Send Question
+  const handleSendMessage = async (textToSend) => {
+    const question = textToSend || inputVal;
+    if (!question.trim() || isStreaming || !activeFile) return;
+
     setInputVal("");
-    setMessages(prev => [...prev, { role: "user", text: userText }]);
-    setIsAiTyping(true);
+    if (inputRef.current) {
+      inputRef.current.style.height = "auto";
+    }
 
-    const assistantMsgId = Date.now();
-    setMessages(prev => [...prev, { role: "ai", text: "", id: assistantMsgId, streaming: true }]);
+    const userMsgId = "user-" + Date.now();
+    const assistantMsgId = "ai-" + Date.now();
+
+    // Optimistically append user message & streaming assistant message
+    setMessages((prev) => [
+      ...prev,
+      { id: userMsgId, role: "user", content: question },
+      { id: assistantMsgId, role: "model", content: "", streaming: true, citations: [] },
+    ]);
+
+    setIsStreaming(true);
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
     try {
-      const reader = await api.stream("/api/pdf/query", {
-        fileId: activeFileId,
-        question: userText
-      });
+      const reader = await api.stream(
+        "/api/pdf/query",
+        {
+          fileId: activeFile.id,
+          question,
+        },
+        controller.signal
+      );
+
       const decoder = new TextDecoder();
+      let accumulatedText = "";
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const lines = decoder.decode(value, { stream: true }).split("\n");
+        const raw = decoder.decode(value, { stream: true });
+        const lines = raw.split("\n");
+
         for (const line of lines) {
           if (!line.startsWith("data: ")) continue;
           try {
             const data = JSON.parse(line.slice(6));
             if (data.type === "token") {
-              setMessages(prev =>
-                prev.map(m =>
-                  m.id === assistantMsgId
-                    ? { ...m, text: m.text + data.content }
-                    : m
+              accumulatedText += data.content;
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantMsgId ? { ...m, content: accumulatedText } : m
                 )
               );
             } else if (data.type === "done") {
-              setMessages(prev =>
-                prev.map(m => m.id === assistantMsgId ? { ...m, streaming: false, citations: data.citations } : m)
-              );
-              setIsAiTyping(false);
-            } else if (data.type === "error") {
-              setMessages(prev =>
-                prev.map(m =>
+              setMessages((prev) =>
+                prev.map((m) =>
                   m.id === assistantMsgId
-                    ? { ...m, text: data.message, streaming: false }
+                    ? {
+                        ...m,
+                        id: data.messageId || assistantMsgId,
+                        streaming: false,
+                        citations: data.citations || [],
+                      }
                     : m
                 )
               );
-              setIsAiTyping(false);
+              setIsStreaming(false);
+            } else if (data.type === "error") {
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantMsgId
+                    ? { ...m, content: data.message, streaming: false }
+                    : m
+                )
+              );
+              setIsStreaming(false);
             }
-          } catch { /* skip */ }
+          } catch {
+            // Skip parse errors
+          }
         }
       }
     } catch (err) {
-      console.error("Query error:", err);
-      setMessages(prev =>
-        prev.map(m => m.id === assistantMsgId ? { ...m, text: "⚠️ Connection lost. Try again.", streaming: false } : m)
-      );
-      setIsAiTyping(false);
+      if (err.name === "AbortError") {
+        setMessages((prev) =>
+          prev.map((m) => (m.id === assistantMsgId ? { ...m, streaming: false } : m))
+        );
+      } else {
+        console.error("PDF query error:", err);
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantMsgId
+              ? { ...m, content: "⚠️ Connection interrupted. Please try again.", streaming: false }
+              : m
+          )
+        );
+      }
+      setIsStreaming(false);
+    } finally {
+      abortControllerRef.current = null;
+    }
+  };
+
+  const handleCopy = async (id, text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch (err) {
+      console.error("Copy failed:", err);
     }
   };
 
   return (
-    <div className="flex-1 w-full bg-[#030712] text-white flex flex-col relative overflow-hidden">
-      
-      {/* Background Glows */}
-      <div className="absolute top-[-5%] left-[-10%] w-[500px] h-[500px] bg-cyan-600/10 rounded-full blur-[120px] pointer-events-none z-0" />
-      <div className="absolute bottom-[-5%] right-[-5%] w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none z-0" />
+    <div className="h-full w-full flex flex-col bg-[#030712] overflow-hidden text-white relative">
+      {/* Background ambient glows */}
+      <div className="absolute top-0 right-1/4 w-[450px] h-[450px] bg-cyan-600/10 rounded-full blur-[130px] pointer-events-none z-0" />
+      <div className="absolute bottom-0 left-1/4 w-[500px] h-[500px] bg-violet-600/10 rounded-full blur-[140px] pointer-events-none z-0" />
 
-      <main className="flex-1 p-4 md:p-6 relative z-10 w-full max-w-[1400px] mx-auto overflow-hidden">
-        <motion.div 
-          variants={containerVariants}
-          initial="hidden"
-          animate="show"
-          className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full min-h-0"
-        >
-          
-          {/* LEFT: DOCUMENT HUB */}
-          <motion.div variants={itemVariants} className="lg:col-span-4 h-full flex flex-col no-scrollbar overflow-y-auto pb-4">
-            <div className={`bg-[#0B101A]/80 backdrop-blur-xl border border-white/10 rounded-3xl p-5 flex flex-col shrink-0 shadow-2xl relative overflow-hidden transition-all duration-500 ${sessionState === 'active' ? "opacity-60 grayscale-[20%]" : "group"}`}>
-              <div className="absolute inset-0 bg-linear-to-b from-cyan-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-              
-              <div className="flex items-center gap-3 mb-6 relative z-10">
-                <div className="w-8 h-8 rounded-xl bg-linear-to-br from-cyan-600/20 to-blue-600/20 border border-cyan-500/30 flex items-center justify-center shadow-inner">
-                  <ScrollText className="text-cyan-400 w-4 h-4" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold text-white tracking-tight">Data Intelligence</h2>
-                  <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">Semantic Analysis Engine</p>
-                </div>
+      {/* ── TOP HEADER BAR ── */}
+      <header className="h-14 px-4 sm:px-6 border-b border-white/5 bg-[#050812]/90 backdrop-blur-md flex items-center justify-between shrink-0 z-20">
+        <div className="flex items-center gap-3 min-w-0">
+          {/* My Documents Drawer Trigger */}
+          <button
+            onClick={() => setIsDrawerOpen(true)}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-cyan-500/30 text-gray-300 hover:text-white text-xs font-medium transition-all cursor-pointer group shadow-xs"
+            title="Open Document Library"
+          >
+            <FolderOpen size={14} className="text-cyan-400 group-hover:scale-110 transition-transform" />
+            <span className="font-semibold">Documents</span>
+            {files.length > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full bg-cyan-600/20 border border-cyan-500/30 text-[10px] font-mono text-cyan-300">
+                {files.length}
+              </span>
+            )}
+          </button>
+
+          <div className="w-[1px] h-4 bg-white/10 shrink-0" />
+
+          {/* Active Document Title & Page Count */}
+          {activeFile ? (
+            <div className="min-w-0 flex items-center gap-2">
+              <FileText size={15} className="text-cyan-400 shrink-0" />
+              <h1 className="text-xs sm:text-sm font-semibold text-white truncate max-w-[140px] sm:max-w-xs md:max-w-md">
+                {activeFile.file_name}
+              </h1>
+              {activeFile.page_count > 0 && (
+                <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-[10px] font-mono text-gray-400">
+                  {activeFile.page_count} {activeFile.page_count === 1 ? "Page" : "Pages"}
+                </span>
+              )}
+            </div>
+          ) : (
+            <span className="text-xs text-gray-400 font-medium">No document selected</span>
+          )}
+        </div>
+
+        {/* Right Actions: Mobile Toggle + Upload New Document */}
+        <div className="flex items-center gap-2">
+          {/* Mobile view toggle (PDF vs Chat) */}
+          {activeFile && (
+            <div className="flex md:hidden bg-white/5 p-0.5 rounded-lg border border-white/10 text-xs">
+              <button
+                onClick={() => setMobileTab("pdf")}
+                className={`px-2.5 py-1 rounded-md font-medium transition-all ${
+                  mobileTab === "pdf" ? "bg-cyan-600 text-white shadow-xs" : "text-gray-400"
+                }`}
+              >
+                PDF
+              </button>
+              <button
+                onClick={() => setMobileTab("chat")}
+                className={`px-2.5 py-1 rounded-md font-medium transition-all ${
+                  mobileTab === "chat" ? "bg-cyan-600 text-white shadow-xs" : "text-gray-400"
+                }`}
+              >
+                Chat
+              </button>
+            </div>
+          )}
+
+          {/* Hidden File Input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.docx,.txt"
+            className="hidden"
+            onChange={(e) => {
+              if (e.target.files?.[0]) {
+                handleUpload(e.target.files[0]);
+                e.target.value = "";
+              }
+            }}
+          />
+
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-linear-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 rounded-xl transition-all shadow-md shadow-cyan-600/20 hover:scale-[1.02] cursor-pointer disabled:opacity-50"
+            title="Upload a new PDF"
+          >
+            {isUploading ? (
+              <>
+                <Loader2 size={13} className="animate-spin" />
+                <span className="hidden sm:inline">Processing...</span>
+              </>
+            ) : (
+              <>
+                <Plus size={14} />
+                <span>Upload PDF</span>
+              </>
+            )}
+          </button>
+        </div>
+      </header>
+
+      {/* ── MAIN WORKSPACE ── */}
+      <div className="flex-1 min-h-0 flex relative z-10 overflow-hidden">
+        {/* Uploading Overlay */}
+        {isUploading && (
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-md z-40 flex flex-col items-center justify-center p-6 text-center animate-in fade-in">
+            <div className="w-16 h-16 rounded-2xl bg-cyan-600/20 border border-cyan-500/40 flex items-center justify-center mb-4 shadow-[0_0_30px_rgba(6,182,212,0.3)]">
+              <Loader2 size={32} className="animate-spin text-cyan-400" />
+            </div>
+            <h3 className="text-lg font-bold text-white mb-2">Analyzing Document</h3>
+            <p className="text-sm text-gray-400 max-w-sm">
+              {uploadStatusText || "Extracting pages, tables, and building Gemini 1M intelligence context..."}
+            </p>
+          </div>
+        )}
+
+        {!activeFile ? (
+          // ── EMPTY STATE (No PDF loaded) ──
+          <div className="flex-1 overflow-y-auto no-scrollbar flex flex-col items-center justify-center p-6 text-center max-w-2xl mx-auto">
+            <div className="w-20 h-20 rounded-3xl bg-linear-to-br from-cyan-600/20 to-blue-600/20 border border-cyan-500/30 flex items-center justify-center mb-6 shadow-[0_0_40px_rgba(6,182,212,0.2)]">
+              <BookOpen size={40} className="text-cyan-400" />
+            </div>
+
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mb-3">
+              Chat with Any Document
+            </h2>
+            <p className="text-gray-400 max-w-md mb-8 text-sm leading-relaxed">
+              Upload research papers, contracts, technical manuals, or textbooks. Powered by Google Gemini 1M Context with 100% accurate page citations.
+            </p>
+
+            {/* Drag & Drop Upload Card */}
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                if (e.dataTransfer.files?.[0]) handleUpload(e.dataTransfer.files[0]);
+              }}
+              className="w-full p-8 rounded-2xl border-2 border-dashed border-white/10 hover:border-cyan-500/50 bg-[#0B101A]/60 hover:bg-cyan-500/5 transition-all duration-300 cursor-pointer flex flex-col items-center justify-center group mb-8 shadow-2xl"
+            >
+              <div className="w-12 h-12 rounded-xl bg-white/5 group-hover:bg-cyan-500/20 border border-white/10 group-hover:border-cyan-500/40 flex items-center justify-center mb-3 transition-colors">
+                <UploadCloud size={24} className="text-gray-400 group-hover:text-cyan-400 transition-colors" />
               </div>
+              <p className="text-sm font-semibold text-white mb-1">
+                Click to browse or drop your file here
+              </p>
+              <p className="text-xs text-gray-500 font-mono">
+                Supports PDF, DOCX, TXT (Up to 50MB)
+              </p>
+            </div>
 
-              <div className="flex-1 space-y-6 relative z-10">
-                
-                {/* Upload Zone */}
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-[12px] font-semibold text-gray-300 mb-2">
-                    Source Document
-                    <span className="text-cyan-400">*</span>
-                  </label>
-                  
-                  {sessionState === "active" ? (
-                    <div className="w-full rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-3 flex items-center gap-3 shadow-inner">
-                       <FileText className="text-cyan-400" size={20} />
-                       <div className="flex-1 min-w-0">
-                          <span className="block text-sm font-bold text-cyan-300 truncate">{file?.name}</span>
-                          <span className="block text-[10px] text-cyan-500/80">Active in context</span>
-                       </div>
-                    </div>
-                  ) : (
-                    <div className="relative">
-                      <input 
-                         type="file" 
-                         accept=".pdf,.txt,.docx"
-                         onChange={(e) => setFile(e.target.files[0])}
-                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                      />
-                      <div className={`w-full h-36 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center transition-all shadow-inner
-                        ${file ? "border-cyan-500/50 bg-cyan-500/5" : "border-white/10 bg-black/40 hover:border-white/30"}`}>
-                          {file ? (
-                            <>
-                              <div className="w-10 h-10 bg-cyan-500/20 rounded-full flex items-center justify-center mb-2">
-                                 <FileText className="text-cyan-400" size={20} />
-                              </div>
-                              <span className="text-sm font-bold text-cyan-300 truncate max-w-[80%]">{file.name}</span>
-                              <span className="text-[10px] text-cyan-500/70 mt-1">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
-                            </>
-                          ) : (
-                            <>
-                              <div className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center mb-2">
-                                 <UploadCloud className="text-gray-400 group-hover:text-cyan-400 transition-colors" size={20} />
-                              </div>
-                              <span className="text-sm font-semibold text-gray-300">Click or drag PDF here</span>
-                              <span className="text-[10px] text-gray-500 mt-1">PDF or DOCX (Max 10MB)</span>
-                            </>
-                          )}
+            {/* Recent Documents Chips */}
+            {files.length > 0 && (
+              <div className="w-full text-left">
+                <div className="flex items-center gap-2 mb-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                  <Clock size={13} />
+                  <span>Or open a recent document</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {files.slice(0, 4).map((f) => (
+                    <button
+                      key={f.id}
+                      onClick={() => selectDocument(f)}
+                      className="p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-cyan-500/40 text-left transition-all flex items-center gap-3 cursor-pointer group"
+                    >
+                      <FileText size={18} className="text-cyan-400 shrink-0 group-hover:scale-110 transition-transform" />
+                      <div className="min-w-0 flex-1">
+                        <span className="block text-xs font-bold text-gray-200 truncate group-hover:text-white">
+                          {f.file_name}
+                        </span>
+                        <span className="text-[10px] text-gray-500 font-mono">
+                          {f.page_count} pages • {formatBytes(f.file_size)}
+                        </span>
                       </div>
-                    </div>
-                  )}
+                    </button>
+                  ))}
                 </div>
-
-                {/* Analysis Mode */}
-                <div className="space-y-3">
-                  <label className="flex items-center justify-between text-[12px] font-semibold text-gray-300">
-                    <span>Analysis Mode</span>
-                    <span className="text-[9px] uppercase font-bold tracking-wider text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded-md border border-blue-500/20">Gemini 1.5 Flash</span>
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {MODES.map((m) => {
-                      const Icon = m.icon;
-                      return (
-                        <button
-                          key={m.id}
-                          disabled={sessionState === "active"}
-                          onClick={() => setMode(m.id)}
-                          className={`flex flex-col items-center justify-center gap-1.5 h-[70px] rounded-xl border transition-all duration-300 disabled:opacity-80
-                            ${mode === m.id 
-                              ? "bg-cyan-600/10 border-cyan-500/50 shadow-[inset_0_0_15px_rgba(6,182,212,0.1)]" 
-                              : "bg-black/30 border-white/5 hover:border-white/10"
-                            }`}
-                        >
-                          <Icon size={16} className={mode === m.id ? "text-cyan-400" : "text-gray-500"} />
-                          <span className={`text-[11px] font-bold ${mode === m.id ? "text-white" : "text-gray-400"}`}>
-                            {m.label}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          // ── SPLIT SCREEN WORKSPACE ──
+          <div className="flex-1 flex w-full h-full min-h-0 overflow-hidden">
+            {/* LEFT PANE: HIGH-RES PDF VIEWER */}
+            <div
+              className={`w-full md:w-1/2 h-full flex flex-col border-r border-white/5 bg-[#070B14] ${
+                mobileTab === "pdf" ? "flex" : "hidden md:flex"
+              }`}
+            >
+              {/* PDF Toolbar */}
+              <div className="h-10 px-4 border-b border-white/5 bg-[#050812] flex items-center justify-between text-xs text-gray-400 shrink-0">
+                <div className="flex items-center gap-2 min-w-0">
+                  <BookOpen size={13} className="text-cyan-400 shrink-0" />
+                  <span className="font-semibold text-gray-300 truncate">Document Preview</span>
                 </div>
-
+                {activeFileBlobUrl && (
+                  <a
+                    href={activeFileBlobUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-[11px] hover:text-white hover:underline text-gray-500"
+                    title="Open in new window"
+                  >
+                    <ExternalLink size={12} />
+                    <span>Expand</span>
+                  </a>
+                )}
               </div>
 
-              {/* ACTION CTA */}
-              <div className="mt-6 relative z-10 w-full shrink-0">
-                {sessionState === "active" ? (
-                  <button
-                    onClick={() => {
-                       setSessionState("idle");
-                       setFile(null);
-                       setActiveFileId(null);
-                       setMessages([]);
-                       setFileStats({ pages: 0, chunks: 0 });
-                    }}
-                    className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 text-[13px] font-bold transition-all"
-                  >
-                    Clear Memory Context
-                  </button>
+              {/* PDF Iframe Viewer */}
+              <div className="flex-1 min-h-0 relative bg-[#121622] overflow-hidden">
+                {isLoadingPdf ? (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-gray-400">
+                    <Loader2 size={24} className="animate-spin text-cyan-400" />
+                    <span className="text-xs">Loading PDF pages...</span>
+                  </div>
+                ) : activeFileBlobUrl ? (
+                  <iframe
+                    src={activeFileBlobUrl}
+                    className="w-full h-full border-none"
+                    title="PDF Viewer"
+                  />
                 ) : (
-                  <button
-                    onClick={handleUpload}
-                    disabled={sessionState !== "idle" || !file}
-                    className="w-full relative group overflow-hidden rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                  <div className="h-full flex items-center justify-center text-xs text-gray-500">
+                    Unable to load preview
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* RIGHT PANE: AI CHAT ASSISTANT */}
+            <div
+              className={`w-full md:w-1/2 h-full flex flex-col bg-[#030712] relative ${
+                mobileTab === "chat" ? "flex" : "hidden md:flex"
+              }`}
+            >
+              {/* Chat Messages Scrollable Canvas */}
+              <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-4 sm:px-6 py-4 space-y-6">
+                {/* Initial Welcome & Quick Prompts */}
+                {messages.length === 0 && !isLoadingMessages && (
+                  <div className="py-8 text-center max-w-md mx-auto">
+                    <div className="w-12 h-12 rounded-2xl bg-cyan-600/20 border border-cyan-500/30 flex items-center justify-center mx-auto mb-3 shadow-[0_0_20px_rgba(6,182,212,0.15)]">
+                      <Sparkles size={22} className="text-cyan-400" />
+                    </div>
+                    <h3 className="text-base font-bold text-white mb-1.5">
+                      {activeFile.file_name}
+                    </h3>
+                    <p className="text-xs text-gray-400 mb-6 leading-relaxed">
+                      This document is fully loaded in Gemini&apos;s 1M context. Ask any specific question or choose a prompt below:
+                    </p>
+
+                    <div className="space-y-2 text-left">
+                      {QUICK_PROMPTS.map((prompt) => (
+                        <button
+                          key={prompt}
+                          onClick={() => handleSendMessage(prompt)}
+                          className="w-full p-2.5 rounded-xl border border-white/10 hover:border-cyan-500/40 bg-white/[0.02] hover:bg-cyan-500/10 text-xs text-gray-300 hover:text-white transition-all flex items-center justify-between group cursor-pointer"
+                        >
+                          <span className="truncate pr-2">{prompt}</span>
+                          <ArrowRight size={13} className="text-gray-500 group-hover:text-cyan-400 shrink-0 transition-transform group-hover:translate-x-0.5" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Messages List */}
+                {messages.map((msg, idx) => (
+                  <div
+                    key={msg.id || idx}
+                    className={`flex w-full ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                   >
-                    <div className={`absolute inset-0 transition-opacity duration-300 bg-linear-to-r from-cyan-600 to-blue-600 ${sessionState !== "idle" ? "opacity-50" : "opacity-100 group-hover:opacity-90"}`} />
-                    
-                    <div className="relative px-5 py-3 flex items-center justify-center gap-2">
-                      {sessionState === "analyzing" ? (
-                        <>
-                          <Loader2 size={16} className="animate-spin text-white" />
-                          <span className="text-[13px] font-bold text-white tracking-wide">Building Vector Index...</span>
-                        </>
+                    {msg.role === "user" ? (
+                      // USER BUBBLE
+                      <div className="bg-[#1e2434] border border-white/10 text-gray-100 rounded-2xl rounded-tr-xs px-4 py-2.5 max-w-[85%] shadow-md whitespace-pre-wrap leading-relaxed text-[14px]">
+                        {msg.content}
+                      </div>
+                    ) : (
+                      // ASSISTANT BUBBLE WITH MARKDOWN
+                      <div className="flex gap-3 max-w-[95%] w-full">
+                        <div className="w-7 h-7 shrink-0 rounded-lg bg-linear-to-br from-cyan-600 to-blue-600 flex items-center justify-center shadow-md shadow-cyan-500/10 mt-1">
+                          <Sparkles size={13} className="text-white" />
+                        </div>
+
+                        <div className="pt-0.5 min-w-0 flex-1">
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <span className="text-[11px] font-semibold text-gray-300 uppercase tracking-wider">
+                              Promptix Document AI
+                            </span>
+                            {msg.streaming && (
+                              <span className="text-[10px] text-cyan-400 font-mono flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                                Analyzing...
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Markdown Rendered Content */}
+                          <MarkdownRenderer content={msg.content} isStreaming={msg.streaming} />
+
+                          {/* Citations Badges */}
+                          {msg.citations && msg.citations.length > 0 && !msg.streaming && (
+                            <div className="mt-3 pt-2.5 border-t border-white/5 flex flex-wrap items-center gap-1.5">
+                              <span className="text-[10px] uppercase font-bold text-gray-500 tracking-wider mr-1">
+                                Sources:
+                              </span>
+                              {msg.citations.map((cite, cIdx) => (
+                                <span
+                                  key={cIdx}
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-[10px] font-mono font-bold text-emerald-400"
+                                >
+                                  <FileSearch size={10} />
+                                  {cite}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Actions: Copy */}
+                          {!msg.streaming && msg.content && (
+                            <div className="mt-2.5 flex items-center gap-2 pt-1 text-gray-500">
+                              <button
+                                onClick={() => handleCopy(msg.id || idx, msg.content)}
+                                className="flex items-center gap-1 px-2 py-0.5 rounded-md hover:bg-white/5 hover:text-gray-300 text-[11px] transition-colors cursor-pointer"
+                                title="Copy answer"
+                              >
+                                {copiedId === (msg.id || idx) ? (
+                                  <>
+                                    <Check size={12} className="text-emerald-400" />
+                                    <span className="text-emerald-400">Copied</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy size={12} />
+                                    <span>Copy</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+                {/* Loading indicator before first chunk */}
+                {isStreaming && messages.at(-1)?.role !== "model" && (
+                  <div className="flex gap-3 items-center text-gray-500 text-xs py-2">
+                    <Loader2 size={14} className="animate-spin text-cyan-400" />
+                    <span>Searching document context...</span>
+                  </div>
+                )}
+
+                <div ref={chatEndRef} />
+              </div>
+
+              {/* Sleek ChatGPT-style Input Bar */}
+              <div className="p-3 sm:p-4 w-full max-w-2xl mx-auto shrink-0">
+                <div className="relative group w-full">
+                  <div className="absolute inset-0 bg-cyan-600/10 rounded-2xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-500 pointer-events-none" />
+
+                  <div className="relative bg-[#0F1523] border border-white/10 rounded-2xl flex items-end p-1.5 sm:p-2 shadow-[0_10px_35px_rgba(0,0,0,0.45)] transition-all duration-300 focus-within:border-cyan-500/50 focus-within:shadow-[0_0_20px_rgba(6,182,212,0.15)]">
+                    <textarea
+                      ref={inputRef}
+                      value={inputVal}
+                      onChange={(e) => {
+                        setInputVal(e.target.value);
+                        e.target.style.height = "auto";
+                        e.target.style.height = `${Math.min(e.target.scrollHeight, 140)}px`;
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSendMessage();
+                        }
+                      }}
+                      placeholder={`Ask anything about ${activeFile.file_name}...`}
+                      className="flex-1 bg-transparent border-none outline-none text-white placeholder:text-gray-500 px-3.5 py-2.5 min-h-[44px] max-h-36 resize-none scrollbar-hide text-[14px] leading-relaxed"
+                      rows={1}
+                    />
+
+                    <div className="shrink-0 pb-0.5 pr-0.5">
+                      {isStreaming ? (
+                        <button
+                          onClick={handleStop}
+                          className="w-9 h-9 rounded-xl flex items-center justify-center bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/40 transition-all duration-200 hover:scale-105 cursor-pointer shadow-[0_0_15px_rgba(239,68,68,0.25)]"
+                          title="Stop generating"
+                        >
+                          <Square size={13} className="fill-current" />
+                        </button>
                       ) : (
-                        <>
-                          <Database size={16} className="text-white group-hover:scale-110 transition-transform" />
-                          <span className="text-[13px] font-bold text-white tracking-wide shadow-sm">Analyze Document</span>
-                        </>
+                        <button
+                          onClick={() => handleSendMessage()}
+                          disabled={!inputVal.trim()}
+                          className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 ${
+                            !inputVal.trim()
+                              ? "bg-white/5 text-gray-600 cursor-not-allowed"
+                              : "bg-linear-to-r from-cyan-600 to-blue-600 text-white shadow-[0_0_15px_rgba(6,182,212,0.5)] hover:scale-105 cursor-pointer"
+                          }`}
+                          title="Send question"
+                        >
+                          <Send size={15} className={inputVal.trim() ? "translate-x-0.5 -translate-y-0.5" : ""} />
+                        </button>
                       )}
                     </div>
-                  </button>
-                )}
-              </div>
-            </div>
-          </motion.div>
-
-          {/* RIGHT: INTELLIGENCE UI */}
-          <motion.div variants={itemVariants} className="lg:col-span-8 h-full flex flex-col relative pb-4">
-            <div className="bg-[#0B101A]/60 backdrop-blur-lg border border-white/10 rounded-3xl flex flex-col h-full shadow-2xl relative overflow-hidden">
-              
-              {/* Telemetry Header */}
-              <div className="h-14 border-b border-white/5 flex items-center justify-between px-5 bg-black/40 shrink-0 relative z-20">
-                <div className="flex items-center gap-3">
-                  <div className="flex gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full bg-red-500/20 border border-red-500/50"></div>
-                    <div className="w-2.5 h-2.5 rounded-full bg-amber-500/20 border border-amber-500/50"></div>
-                    <div className="w-2.5 h-2.5 rounded-full bg-green-500/20 border border-green-500/50"></div>
                   </div>
-                  <div className="w-px h-6 bg-white/10 mx-2"></div>
-                  
-                  {sessionState === "active" ? (
-                     <div className="flex items-center gap-2 bg-cyan-500/10 border border-cyan-500/20 px-2 py-1 rounded-md">
-                        <CheckCircle2 size={12} className="text-cyan-400" />
-                        <span className="text-[10px] uppercase tracking-widest font-bold text-cyan-400">Context Loaded</span>
-                     </div>
-                  ) : (
-                     <div className="flex items-center gap-2 bg-gray-500/10 border border-gray-500/20 px-2 py-1 rounded-md">
-                        <Info size={10} className="text-gray-400" />
-                        <span className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Memory Empty</span>
-                     </div>
-                  )}
+
+                  <div className="text-center mt-2 text-[10px] text-gray-600 font-medium">
+                    Promptix AI can make mistakes. Verify critical facts directly in the PDF preview.
+                  </div>
                 </div>
-
-                {sessionState === "active" && (
-                  <div className="hidden sm:flex items-center justify-end gap-5">
-                    <div className="flex items-center gap-1.5">
-                      <Files size={12} className="text-gray-400" />
-                      <span className="text-[11px] font-mono font-medium text-gray-400">Pages: {fileStats.pages}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 bg-black/60 px-3 py-1 rounded-md border border-white/5">
-                      <Database size={12} className="text-cyan-400" />
-                      <span className="text-[12px] font-mono font-bold text-white">Chunks: {fileStats.chunks}</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Main Scrolling Content Area */}
-              <div className="flex-1 flex flex-col relative no-scrollbar bg-linear-to-b from-transparent to-black/20">
-
-                {sessionState === "idle" && (
-                  <div className="absolute inset-6 rounded-2xl border-2 border-dashed border-white/5 bg-white/[0.01] flex flex-col items-center justify-center text-center">
-                    <div className="w-16 h-16 bg-linear-to-br from-cyan-600/10 to-blue-600/10 rounded-full flex items-center justify-center mb-4 shadow-[0_0_30px_rgba(6,182,212,0.1)]">
-                      <Search size={24} className="text-cyan-500/50" />
-                    </div>
-                    <h3 className="text-lg font-bold tracking-tight text-white mb-2">Knowledge Base Uninitialized</h3>
-                    <p className="text-xs text-gray-500 max-w-[280px]">
-                      Upload a PDF on the left panel to begin extracting knowledge and querying the semantic database.
-                    </p>
-                  </div>
-                )}
-
-                {sessionState === "analyzing" && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center bg-[#0B101A]">
-                    <div className="relative w-[300px] h-32 mb-6 rounded-xl border border-white/5 bg-black/40 overflow-hidden pt-4 px-4">
-                       <div className="space-y-3 opacity-30">
-                          <div className="h-2 bg-gray-500 rounded-full w-3/4" />
-                          <div className="h-2 bg-gray-400 rounded-full w-full" />
-                          <div className="h-2 bg-gray-500 rounded-full w-5/6" />
-                          <div className="h-2 bg-gray-600 rounded-full w-1/2" />
-                       </div>
-                       <motion.div 
-                         animate={{ y: [0, 80, 0] }}
-                         transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
-                         className="absolute top-0 left-0 right-0 h-1 bg-cyan-400 shadow-[0_0_20px_rgba(34,211,238,1)]"
-                       />
-                    </div>
-                    
-                    <div className="text-[15px] font-bold text-transparent bg-clip-text bg-linear-to-r from-cyan-400 to-blue-400 mb-1.5 tracking-wide">
-                       Tokenizing Document Layout
-                    </div>
-                    <div className="flex items-center gap-1.5 text-[10px] text-gray-500 font-medium tracking-widest uppercase mt-4 bg-white/5 px-3 py-1 rounded-full">
-                       <Loader2 size={12} className="animate-spin text-cyan-500" /> Generating Embeddings
-                    </div>
-                  </div>
-                )}
-
-                {sessionState === "active" && (
-                  <div className="flex flex-col h-full w-full relative">
-                     <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 no-scrollbar pb-20">
-                        <AnimatePresence>
-                          {messages.map((m, i) => (
-                            <motion.div 
-                              key={m.id || i}
-                              initial={{ opacity: 0, y: 15, scale: 0.98 }}
-                              animate={{ opacity: 1, y: 0, scale: 1 }}
-                              className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start w-[90%] md:w-[85%]'}`}
-                            >
-                               <div className={`relative rounded-2xl p-4 text-[14px] leading-relaxed
-                                 ${m.role === 'user' 
-                                   ? 'bg-linear-to-br from-cyan-600 to-blue-600 text-white rounded-br-[4px] shadow-[0_5px_20px_rgba(6,182,212,0.2)] max-w-[85%]' 
-                                   : 'bg-[#121826] border border-white/5 text-gray-200 rounded-tl-[4px] shadow-lg'
-                                 }`}>
-                                 {m.role === 'ai' && (
-                                    <div className="absolute -top-3 left-3 bg-[#0B101A] border border-white/5 text-[9px] uppercase font-bold text-cyan-500 px-2 py-0.5 rounded-full z-10 flex items-center gap-1">
-                                      <Sparkles size={8} className="fill-cyan-500" /> Document Intel
-                                    </div>
-                                 )}
-                                 
-                                 <div>{m.text} {m.streaming && <span className="inline-block w-2 h-4 bg-cyan-400 animate-pulse ml-1" />}</div>
-                                 
-                                 {m.role === 'ai' && m.citations && m.citations.length > 0 && (
-                                   <div className="mt-3 pt-3 border-t border-white/5 flex flex-wrap gap-2">
-                                     {m.citations.map((cite, idx) => (
-                                       <span key={idx} className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-green-400 bg-green-400/10 border border-green-400/20 px-2 py-0.5 rounded-md">
-                                         <Files size={10} /> {cite}
-                                       </span>
-                                     ))}
-                                   </div>
-                                 )}
-                               </div>
-                            </motion.div>
-                          ))}
-                        </AnimatePresence>
-                        <div ref={chatEndRef} />
-                     </div>
-
-                     {/* Pro Input Console */}
-                     <div className="shrink-0 px-4 pb-4 pt-2 bg-linear-to-t from-[#0B101A] to-transparent shrink-0">
-                        <div className="flex flex-col bg-[#050812]/80 backdrop-blur-2xl border border-white/10 rounded-2xl p-2 group focus-within:border-cyan-500/40 transition-colors shadow-2xl relative">
-                           <div className="absolute inset-[-1px] rounded-2xl bg-linear-to-r from-cyan-500/20 to-blue-500/20 blur-sm opacity-0 group-focus-within:opacity-100 transition-opacity pointer-events-none -z-10" />
-                           
-                           <div className="flex items-end gap-2">
-                             <button className="shrink-0 p-2.5 text-gray-400 hover:text-white hover:bg-white/10 transition-colors rounded-xl mb-0.5 relative group/attach">
-                               <Database size={18} />
-                             </button>
-                             
-                             <textarea 
-                               value={inputVal}
-                               onChange={(e) => setInputVal(e.target.value)}
-                               onKeyDown={(e) => {
-                                 if(e.key === 'Enter' && !e.shiftKey) {
-                                   e.preventDefault();
-                                   handleSendMessage();
-                                 }
-                               }}
-                               placeholder="Ask a question about your document..."
-                               className="flex-1 bg-transparent border-none text-[14px] text-gray-200 focus:outline-none resize-none py-3 min-h-[44px] max-h-[140px] leading-relaxed"
-                               rows={1}
-                             />
-                             
-                             <button 
-                               onClick={handleSendMessage}
-                               disabled={!inputVal.trim() || isAiTyping}
-                               className="shrink-0 p-2.5 bg-cyan-600 rounded-xl text-white hover:bg-cyan-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-0.5 shadow-[0_0_15px_rgba(6,182,212,0.3)]"
-                             >
-                               <Send size={18} className="translate-x-[1px]" />
-                             </button>
-                           </div>
-                        </div>
-                     </div>
-                  </div>
-                )}
-                
               </div>
             </div>
-          </motion.div>
-          
-        </motion.div>
-      </main>
+          </div>
+        )}
+      </div>
+
+      {/* ─── SLIDE-OVER "MY DOCUMENTS" DRAWER ─── */}
+      {isDrawerOpen && (
+        <div
+          onClick={() => setIsDrawerOpen(false)}
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 transition-opacity animate-in fade-in duration-200"
+        />
+      )}
+
+      <div
+        className={`fixed inset-y-0 left-0 w-[340px] max-w-[85vw] bg-[#070b16] border-r border-[#1e2434] z-50 flex flex-col shadow-2xl transition-transform duration-300 ease-in-out ${
+          isDrawerOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        {/* Drawer Header */}
+        <div className="h-14 px-4 border-b border-white/10 flex items-center justify-between shrink-0 bg-[#050812]">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-cyan-600/20 border border-cyan-500/30 flex items-center justify-center">
+              <FolderOpen size={14} className="text-cyan-400" />
+            </div>
+            <h2 className="text-sm font-semibold text-white">Document Library</h2>
+            <span className="text-[10px] font-mono text-gray-500 bg-white/5 px-1.5 py-0.5 rounded">
+              {files.length}
+            </span>
+          </div>
+
+          <button
+            onClick={() => setIsDrawerOpen(false)}
+            className="p-1.5 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+            title="Close (Esc)"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Upload Action Button */}
+        <div className="p-4 pb-2 shrink-0">
+          <button
+            onClick={() => {
+              setIsDrawerOpen(false);
+              fileInputRef.current?.click();
+            }}
+            className="w-full relative group overflow-hidden rounded-xl bg-linear-to-r from-cyan-600 to-blue-600 p-[1px] shadow-lg shadow-cyan-600/20 cursor-pointer"
+          >
+            <div className="flex items-center justify-center gap-2 bg-[#0B101A] group-hover:bg-transparent py-2.5 px-3 rounded-[11px] text-xs font-semibold text-white transition-colors duration-200">
+              <Plus size={14} className="text-cyan-400 group-hover:text-white transition-colors" />
+              <span>Upload New PDF</span>
+            </div>
+          </button>
+        </div>
+
+        {/* Section Label */}
+        <div className="px-4 pt-3 pb-1.5 flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-gray-500 shrink-0">
+          <span className="flex items-center gap-1.5">
+            <Clock size={11} />
+            Uploaded Documents
+          </span>
+        </div>
+
+        {/* Files List */}
+        <div className="flex-1 overflow-y-auto no-scrollbar p-3 space-y-1">
+          {isLoadingFiles ? (
+            <div className="space-y-2 p-1">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-12 rounded-xl bg-white/[0.04] animate-pulse" />
+              ))}
+            </div>
+          ) : files.length === 0 ? (
+            <div className="text-center py-12 px-4">
+              <FileText size={28} className="mx-auto text-gray-600 mb-2" />
+              <p className="text-xs text-gray-500">No documents uploaded yet.</p>
+            </div>
+          ) : (
+            files.map((file) => {
+              const isActive = activeFile?.id === file.id;
+              return (
+                <div
+                  key={file.id}
+                  onClick={() => selectDocument(file)}
+                  className={`group relative flex items-center justify-between p-2.5 rounded-xl text-xs transition-all duration-200 cursor-pointer ${
+                    isActive
+                      ? "bg-cyan-600/15 border border-cyan-500/30 text-white"
+                      : "text-gray-400 hover:text-gray-200 hover:bg-white/[0.04] border border-transparent"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1 pr-2">
+                    <FileText
+                      size={16}
+                      className={isActive ? "text-cyan-400 shrink-0" : "text-gray-500 shrink-0 group-hover:text-cyan-400"}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <span className="block font-medium truncate">{file.file_name}</span>
+                      <span className="block text-[10px] text-gray-500 font-mono">
+                        {file.page_count} pages • {formatBytes(file.file_size)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Delete Document Button */}
+                  <button
+                    onClick={(e) => handleDeleteDocument(file.id, e)}
+                    className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all cursor-pointer"
+                    title="Delete document"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
     </div>
   );
 }
