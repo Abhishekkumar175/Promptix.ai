@@ -549,12 +549,26 @@ export default function ChatWithPDF() {
             {/* Recent Documents Chips */}
             {files.length > 0 && (
               <div className="w-full text-left">
-                <div className="flex items-center gap-2 mb-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                  <Clock size={13} />
-                  <span>Or open a recent document</span>
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    <Clock size={13} />
+                    <span>Recent Documents</span>
+                  </div>
+
+                  {files.length > 2 && (
+                    <button
+                      onClick={() => setIsDrawerOpen(true)}
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-600/15 hover:bg-cyan-600/25 border border-cyan-500/30 text-cyan-300 hover:text-white text-xs font-semibold transition-all cursor-pointer group shadow-xs"
+                      title="View all documents in library"
+                    >
+                      <span>+{files.length - 2} more</span>
+                      <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
+                    </button>
+                  )}
                 </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {files.slice(0, 4).map((f) => (
+                  {files.slice(0, 2).map((f) => (
                     <button
                       key={f.id}
                       onClick={() => selectDocument(f)}
