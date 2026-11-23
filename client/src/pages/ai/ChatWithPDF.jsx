@@ -159,6 +159,17 @@ export default function ChatWithPDF() {
     loadMessages(file.id);
   };
 
+  // Start new chat (reset active document & return to landing page)
+  const handleNewChat = () => {
+    setActiveFile(null);
+    if (activeFileBlobUrl) {
+      URL.revokeObjectURL(activeFileBlobUrl);
+      setActiveFileBlobUrl(null);
+    }
+    setMessages([]);
+    setIsDrawerOpen(false);
+  };
+
   // Upload handler
   const handleUpload = async (fileToUpload) => {
     if (!fileToUpload) return;
@@ -441,24 +452,35 @@ export default function ChatWithPDF() {
             }}
           />
 
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-linear-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 rounded-xl transition-all shadow-md shadow-cyan-600/20 hover:scale-[1.02] cursor-pointer disabled:opacity-50"
-            title="Upload a new PDF"
-          >
-            {isUploading ? (
-              <>
-                <Loader2 size={13} className="animate-spin" />
-                <span className="hidden sm:inline">Processing...</span>
-              </>
-            ) : (
-              <>
-                <Plus size={14} />
-                <span>Upload PDF</span>
-              </>
-            )}
-          </button>
+          {activeFile ? (
+            <button
+              onClick={handleNewChat}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-linear-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 rounded-xl transition-all shadow-md shadow-cyan-600/20 hover:scale-[1.02] cursor-pointer"
+              title="Start a new PDF chat"
+            >
+              <Plus size={14} />
+              <span>New PDF Chat</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-linear-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 rounded-xl transition-all shadow-md shadow-cyan-600/20 hover:scale-[1.02] cursor-pointer disabled:opacity-50"
+              title="Upload a new PDF"
+            >
+              {isUploading ? (
+                <>
+                  <Loader2 size={13} className="animate-spin" />
+                  <span className="hidden sm:inline">Processing...</span>
+                </>
+              ) : (
+                <>
+                  <Plus size={14} />
+                  <span>Upload PDF</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
       </header>
 
@@ -813,18 +835,15 @@ export default function ChatWithPDF() {
           </button>
         </div>
 
-        {/* Upload Action Button */}
+        {/* Action Button: Start New Chat */}
         <div className="p-4 pb-2 shrink-0">
           <button
-            onClick={() => {
-              setIsDrawerOpen(false);
-              fileInputRef.current?.click();
-            }}
+            onClick={handleNewChat}
             className="w-full relative group overflow-hidden rounded-xl bg-linear-to-r from-cyan-600 to-blue-600 p-[1px] shadow-lg shadow-cyan-600/20 cursor-pointer"
           >
             <div className="flex items-center justify-center gap-2 bg-[#0B101A] group-hover:bg-transparent py-2.5 px-3 rounded-[11px] text-xs font-semibold text-white transition-colors duration-200">
               <Plus size={14} className="text-cyan-400 group-hover:text-white transition-colors" />
-              <span>Upload New PDF</span>
+              <span>Start New PDF Chat</span>
             </div>
           </button>
         </div>
