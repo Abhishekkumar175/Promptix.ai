@@ -79,6 +79,14 @@ export default function ChatWithPDF() {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isStreaming]);
 
+  // Auto-resize input textarea like ChatGPT
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.style.height = "auto";
+      inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 160)}px`;
+    }
+  }, [inputVal]);
+
   // Load user's documents on mount
   const loadFiles = useCallback(async () => {
     try {
@@ -776,19 +784,15 @@ export default function ChatWithPDF() {
                     <textarea
                       ref={inputRef}
                       value={inputVal}
-                      onChange={(e) => {
-                        setInputVal(e.target.value);
-                        e.target.style.height = "auto";
-                        e.target.style.height = `${Math.min(e.target.scrollHeight, 140)}px`;
-                      }}
+                      onChange={(e) => setInputVal(e.target.value)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" && !e.shiftKey) {
                           e.preventDefault();
                           handleSendMessage();
                         }
                       }}
-                      placeholder={`Ask anything about ${activeFile.file_name}...`}
-                      className="flex-1 bg-transparent border-none outline-none text-white placeholder:text-gray-500 px-3.5 py-2.5 min-h-[44px] max-h-36 resize-none scrollbar-hide text-[14px] leading-relaxed"
+                      placeholder="Ask anything about this document..."
+                      className="flex-1 bg-transparent border-none outline-none text-white placeholder:text-gray-500 px-3.5 py-2.5 min-h-[44px] max-h-40 resize-none overflow-y-auto no-scrollbar text-[14px] leading-relaxed"
                       rows={1}
                     />
 
