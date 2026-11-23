@@ -36,10 +36,12 @@ async function migrate() {
       role VARCHAR(20) NOT NULL CHECK (role IN ('user', 'model')),
       content TEXT NOT NULL,
       citations JSONB DEFAULT '[]',
+      follow_ups JSONB DEFAULT '[]',
       created_at TIMESTAMPTZ DEFAULT NOW()
     )
   `;
-  console.log("✓ pdf_messages table ready");
+  await sql`ALTER TABLE pdf_messages ADD COLUMN IF NOT EXISTS follow_ups JSONB DEFAULT '[]'`;
+  console.log("✓ pdf_messages table & follow_ups column ready");
 
   // 3. Create indexes
   await sql`CREATE INDEX IF NOT EXISTS idx_pdf_files_user ON pdf_files(user_id)`;
