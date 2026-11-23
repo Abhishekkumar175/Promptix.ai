@@ -138,7 +138,7 @@ export const getPDFMessages = async (req, res) => {
     }
 
     const messages = await sql`
-      SELECT id, role, content, citations, created_at
+      SELECT id, role, content, citations, follow_ups, created_at
       FROM pdf_messages
       WHERE file_id = ${fileId}
       ORDER BY created_at ASC
@@ -249,19 +249,36 @@ export const queryPDF = async (req, res) => {
       ),
     ];
 
-    // 6. Save assistant response to DB
+    // 6. Extract follow-up questions
+    let cleanContent = fullAssistantResponse;
+    let followUps = [];
+    if (fullAssistantResponse.includes("===FOLLOW_UPS===")) {
+      const parts = fullAssistantResponse.split("===FOLLOW_UPS===");
+      cleanContent = parts[0].trim();
+      if (parts[1]) {
+        followUps = parts[1]
+          .split("\n")
+          .map((line) => line.replace(/^[-*•\d.]+\s*/, "").trim())
+          .filter((line) => line.length > 5)
+          .slice(0, 3);
+      }
+    }
+
+    // 7. Save assistant response to DB
     const [savedAssistantMsg] = await sql`
-      INSERT INTO pdf_messages (file_id, role, content, citations)
-      VALUES (${fileId}, 'model', ${fullAssistantResponse}, ${JSON.stringify(uniqueCitations)})
+      INSERT INTO pdf_messages (file_id, role, content, citations, follow_ups)
+      VALUES (${fileId}, 'model', ${cleanContent}, ${JSON.stringify(uniqueCitations)}, ${JSON.stringify(followUps)})
       RETURNING id
     `;
 
-    // 7. Send completion event
+    // 8. Send completion event
     res.write(
       `data: ${JSON.stringify({
         type: "done",
         messageId: savedAssistantMsg.id,
+        content: cleanContent,
         citations: uniqueCitations,
+        followUps,
       })}\n\n`
     );
     res.end();
