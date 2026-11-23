@@ -305,20 +305,24 @@ export default function ChatWithPDF() {
             const data = JSON.parse(line.slice(6));
             if (data.type === "token") {
               accumulatedText += data.content;
+              const displayContent = accumulatedText.split("===FOLLOW_UPS===")[0];
               setMessages((prev) =>
                 prev.map((m) =>
-                  m.id === assistantMsgId ? { ...m, content: accumulatedText } : m
+                  m.id === assistantMsgId ? { ...m, content: displayContent } : m
                 )
               );
             } else if (data.type === "done") {
+              const finalContent = data.content || accumulatedText.split("===FOLLOW_UPS===")[0].trim();
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === assistantMsgId
                     ? {
                         ...m,
                         id: data.messageId || assistantMsgId,
+                        content: finalContent,
                         streaming: false,
                         citations: data.citations || [],
+                        follow_ups: data.followUps || [],
                       }
                     : m
                 )
@@ -721,6 +725,29 @@ export default function ChatWithPDF() {
                                   </>
                                 )}
                               </button>
+                            </div>
+                          )}
+
+                          {/* Follow-up Question Chips */}
+                          {msg.follow_ups && msg.follow_ups.length > 0 && !msg.streaming && (
+                            <div className="mt-4 pt-3 border-t border-white/5 space-y-2">
+                              <div className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-400">
+                                <Sparkles size={12} className="text-cyan-400" />
+                                <span>Suggested Follow-ups</span>
+                              </div>
+                              <div className="flex flex-col gap-1.5">
+                                {msg.follow_ups.map((q, qIdx) => (
+                                  <button
+                                    key={qIdx}
+                                    onClick={() => handleSendMessage(q)}
+                                    disabled={isStreaming}
+                                    className="text-left text-xs px-3 py-2 rounded-xl bg-white/5 hover:bg-cyan-500/10 border border-white/10 hover:border-cyan-500/40 text-gray-300 hover:text-white transition-all duration-200 cursor-pointer flex items-center justify-between gap-2 group shadow-xs disabled:opacity-50"
+                                  >
+                                    <span>{q}</span>
+                                    <ArrowRight size={12} className="text-gray-500 group-hover:text-cyan-400 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+                                  </button>
+                                ))}
+                              </div>
                             </div>
                           )}
                         </div>
