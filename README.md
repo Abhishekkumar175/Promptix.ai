@@ -48,7 +48,6 @@ Promptix.ai solves the problem of fragmented AI tools by bringing chat, document
 | **Resume Review** | ✅ Complete | Multi-pass analysis using OpenRouter for structured JSON feedback. |
 | **Prompt Templates** | ✅ Complete | Browse and search templates, tracks usage counts. |
 | **Usage Limits/Billing** | 🟡 Partial | Basic free usage tracking exists in Clerk user metadata. |
-| **Image Generation** | 🔴 Not Implemented | Frontend route exists (`/ai/image`), but backend logic is missing. |
 | **Testing** | 🔴 Not Implemented | No automated tests currently exist in the repository. |
 
 ---
@@ -244,7 +243,6 @@ Client -> Decodes SSE, updates UI incrementally
 
 ### P1 — Important
 - [ ] Add unit tests for `geminiService` and `resumeController`.
-- [ ] Complete the Image Generation feature (`/api/image`).
 - [ ] Move from raw SQL to an ORM (like Drizzle) for better type safety.
 
 ### P2 — Nice to Have

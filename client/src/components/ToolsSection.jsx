@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
-import { MessageCircle, FileText, Image as ImageIcon, Mic, LayoutTemplate, FileSearch, ArrowUpRight, Zap, Brain, Sparkles } from "lucide-react";
+import { MessageCircle, FileText, Users, Mic, LayoutTemplate, FileSearch, ArrowUpRight, Zap, Brain, Sparkles } from "lucide-react";
 
 import chatImg from "../assets/chat.png";
 import mock_interview from "../assets/mock_interview.png";
@@ -99,18 +99,18 @@ export default function ToolsSection() {
 
           {/* -------- ROW 2: Three equal compact cards -------- */}
 
-          {/* Image Studio — with screenshot */}
+          {/* Prompt Community */}
           <Reveal delay={0} className="md:col-span-1">
             <div className="group relative h-full rounded-2xl overflow-hidden transition-all duration-500 hover:shadow-[0_0_50px_rgba(217,70,239,0.06)]">
               <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-br from-fuchsia-500/30 via-fuchsia-500/5 to-transparent opacity-0 group-hover:opacity-100 blur-[0.5px] transition-opacity duration-500 pointer-events-none z-0" />
               <div className="relative z-10 h-full rounded-2xl border border-white/[0.06] group-hover:border-fuchsia-500/20 bg-[#0d1117] overflow-hidden flex flex-col transition-colors duration-500">
                 <div className="p-6">
                   <div className="w-9 h-9 rounded-lg bg-fuchsia-500/10 border border-fuchsia-500/20 flex items-center justify-center mb-4">
-                    <ImageIcon size={16} className="text-fuchsia-400" />
+                    <Users size={16} className="text-fuchsia-400" />
                   </div>
-                  <h3 className="text-lg font-bold text-white mb-2">Image Studio</h3>
+                  <h3 className="text-lg font-bold text-white mb-2">Prompt Community</h3>
                   <p className="text-sm text-gray-400 leading-relaxed">
-                    Generate stunning AI visuals. Choose styles, aspect ratios, and quality presets.
+                    Explore trending prompts, community templates, and shared AI workflows.
                   </p>
                 </div>
                 

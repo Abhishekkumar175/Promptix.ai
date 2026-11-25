@@ -3,7 +3,6 @@ import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
   PenLine,
-  Image,
   FileText,
   Users,
   MessageCircle,
@@ -20,7 +19,6 @@ const menu = [
   { name: "Dashboard", icon: LayoutDashboard, path: "/ai" },
   { name: "Chat", icon: MessageCircle, path: "/ai/chat" },
   { name: "Chat with PDF", icon: FileText, path: "/ai/pdf" },
-  { name: "Image Studio", icon: Image, path: "/ai/image" },
   { name: "Review Resume", icon: FileText, path: "/ai/review" },
   { name: "Mock Interview Bot", icon: Mic, path: "/ai/interview" },
   { name: "Community", icon: Users, path: "/ai/community" },

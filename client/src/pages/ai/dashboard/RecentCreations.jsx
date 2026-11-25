@@ -30,7 +30,7 @@ export default function RecentCreations() {
           Your Canvas is Empty
         </h4>
         <p className="text-gray-400 max-w-md mx-auto mb-8">
-          You haven't created anything yet. Use our AI tools to generate stunning images, write compelling articles, or analyze resumes instantly!
+          You haven't created anything yet. Use our AI tools to chat with documents, prepare for mock interviews, or analyze resumes instantly!
         </p>
 
         <Link 

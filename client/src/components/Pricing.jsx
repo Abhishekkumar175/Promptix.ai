@@ -11,7 +11,7 @@ const plans = [
     icon: Zap,
     features: [
       "10 AI chat messages / day",
-      "Basic image generation",
+      "Interactive Document Q&A",
       "1 PDF upload",
       "Mock interview sessions",
       "Resume review + ATS scoring",
@@ -29,7 +29,7 @@ const plans = [
     icon: Sparkles,
     features: [
       "Unlimited AI conversations",
-      "HD image generation",
+      "Deep document analysis & citations",
       "Unlimited PDF uploads",
       "Mock interview sessions",
       "Priority response speed",

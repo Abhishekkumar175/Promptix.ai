@@ -1,7 +1,7 @@
 import { useUser, Protect } from "@clerk/clerk-react";
 import StatCard from "./StatCard";
 import RecentCreations from "./RecentCreations";
-import { Sparkles, Gem, PenLine, Image as ImageIcon, MessageCircle, ArrowRight, Zap, FileText, LayoutTemplate } from "lucide-react";
+import { Sparkles, Gem, PenLine, FileSearch, MessageCircle, ArrowRight, Zap, FileText, LayoutTemplate } from "lucide-react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 
@@ -26,7 +26,7 @@ export default function Dashboard() {
   const quickActions = [
     { title: "Start AI Chat", desc: "Interact with our smartest model", icon: MessageCircle, path: "/ai/chat", color: "from-violet-600 to-indigo-600", shadow: "shadow-violet-500/20" },
     { title: "Chat with PDF", desc: "Analyze any document instantly", icon: FileText, path: "/ai/pdf", color: "from-amber-600 to-orange-600", shadow: "shadow-amber-500/20" },
-    { title: "Image Studio", desc: "Advanced AI canvas editor", icon: ImageIcon, path: "/ai/image", color: "from-fuchsia-600 to-pink-600", shadow: "shadow-fuchsia-500/20" },
+    { title: "Review Resume", desc: "ATS score & AI feedback", icon: FileSearch, path: "/ai/review", color: "from-emerald-600 to-teal-600", shadow: "shadow-emerald-500/20" },
     { title: "Prompt Templates", desc: "Access high-value academic logic", icon: LayoutTemplate, path: "/ai/templates", color: "from-cyan-600 to-blue-600", shadow: "shadow-cyan-500/20" }
   ];
 

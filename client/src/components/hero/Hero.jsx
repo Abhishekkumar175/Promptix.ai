@@ -36,7 +36,7 @@ export default function Hero() {
           className="max-w-2xl text-gray-400 text-lg md:text-xl leading-relaxed mb-10"
         >
           One AI workspace for chat, PDF analysis, 
-          image generation, mock interviews, and more — everything you need to grow your skills.
+          resume review, mock interviews, and more — everything you need to grow your skills.
         </motion.p>
 
         {/* CTA Buttons */}

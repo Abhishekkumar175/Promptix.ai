@@ -7,9 +7,10 @@ export default function TopNavbar() {
   // Quick dynamic title logic
   let pageTitle = "Dashboard Overview";
   if (location.pathname.includes("chat")) pageTitle = "AI Chat Assistant";
-  else if (location.pathname.includes("article")) pageTitle = "Write Article";
-  else if (location.pathname.includes("image")) pageTitle = "Image Generator";
-  else if (location.pathname.includes("remove-bg")) pageTitle = "Background Remover";
+  else if (location.pathname.includes("pdf")) pageTitle = "Chat with PDF";
+  else if (location.pathname.includes("review")) pageTitle = "Resume Reviewer";
+  else if (location.pathname.includes("interview")) pageTitle = "Mock Interview Bot";
+  else if (location.pathname.includes("community")) pageTitle = "Promptix Community";
 
   return (
     <header className="
