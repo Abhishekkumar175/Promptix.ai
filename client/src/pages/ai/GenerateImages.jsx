@@ -144,20 +144,55 @@ export default function GenerateImages() {
     }
   };
 
-  // Download image file
+  // Download image file with watermark cropped out
   const handleDownload = async (imageUrl, promptText = "artwork") => {
     try {
-      const res = await fetch(imageUrl);
-      const blob = await res.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = blobUrl;
-      const cleanName = promptText.slice(0, 30).replace(/[^a-zA-Z0-9]/g, "_");
-      link.download = `Promptix_${cleanName || "art"}.jpg`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(blobUrl);
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        try {
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+          // Crop the bottom 28px to eliminate any platform watermark
+          const cropHeight = Math.max(img.naturalHeight - 28, 100);
+          canvas.width = img.naturalWidth;
+          canvas.height = cropHeight;
+          ctx.drawImage(
+            img,
+            0,
+            0,
+            img.naturalWidth,
+            cropHeight,
+            0,
+            0,
+            canvas.width,
+            canvas.height
+          );
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                const blobUrl = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.href = blobUrl;
+                const cleanName = promptText.slice(0, 30).replace(/[^a-zA-Z0-9]/g, "_");
+                link.download = `Promptix_${cleanName || "art"}.jpg`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(blobUrl);
+              } else {
+                window.open(imageUrl, "_blank");
+              }
+            },
+            "image/jpeg",
+            0.98
+          );
+        } catch {
+          window.open(imageUrl, "_blank");
+        }
+      };
+      img.onerror = () => window.open(imageUrl, "_blank");
+      img.src = imageUrl;
     } catch {
       window.open(imageUrl, "_blank");
     }
