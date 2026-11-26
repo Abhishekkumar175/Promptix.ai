@@ -166,13 +166,41 @@ export default function ResumeReviewPage() {
   };
 
   return (
-    <div className="h-full w-full bg-[#030712] text-white flex flex-col relative overflow-hidden">
-      {/* Background Ambience */}
-      <div className="fixed top-[-5%] left-[-10%] w-[500px] h-[500px] bg-teal-600/10 rounded-full blur-[140px] pointer-events-none z-0" />
-      <div className="fixed bottom-0 right-[-10%] w-[600px] h-[600px] bg-emerald-600/10 rounded-full blur-[140px] pointer-events-none z-0" />
+    <div className="h-full w-full bg-[#030712] text-white flex flex-col relative overflow-hidden print:overflow-visible print:bg-white print:h-auto">
+      {/* ── PRINT MEDIA STYLES ── */}
+      <style>{`
+        @media print {
+          @page {
+            margin: 10mm 12mm 10mm 12mm;
+            size: A4 portrait;
+          }
+          body, html, #root {
+            background-color: #ffffff !important;
+            background: #ffffff !important;
+            color: #0f172a !important;
+            height: auto !important;
+            min-height: 100% !important;
+            overflow: visible !important;
+          }
+          header, aside, nav, .screen-only {
+            display: none !important;
+          }
+          .print-document {
+            display: block !important;
+          }
+          .page-break-avoid {
+            break-inside: avoid;
+            page-break-inside: avoid;
+          }
+        }
+      `}</style>
 
-      {/* FIXED / NON-SCROLLABLE TOP HEADER BAR */}
-      <header className="shrink-0 px-4 md:px-6 lg:px-8 py-3.5 border-b border-white/5 bg-[#030712]/95 backdrop-blur-xl z-20">
+      {/* Background Ambience */}
+      <div className="fixed top-[-5%] left-[-10%] w-[500px] h-[500px] bg-teal-600/10 rounded-full blur-[140px] pointer-events-none z-0 print:hidden" />
+      <div className="fixed bottom-0 right-[-10%] w-[600px] h-[600px] bg-emerald-600/10 rounded-full blur-[140px] pointer-events-none z-0 print:hidden" />
+
+      {/* FIXED / NON-SCROLLABLE TOP HEADER BAR (Hidden in print) */}
+      <header className="shrink-0 px-4 md:px-6 lg:px-8 py-3.5 border-b border-white/5 bg-[#030712]/95 backdrop-blur-xl z-20 print:hidden">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
@@ -216,8 +244,8 @@ export default function ResumeReviewPage() {
         </div>
       </header>
 
-      {/* SCROLLABLE MAIN CONTENT AREA */}
-      <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 relative z-10 w-full max-w-7xl mx-auto no-scrollbar">
+      {/* SCROLLABLE MAIN CONTENT AREA (Hidden in print) */}
+      <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 relative z-10 w-full max-w-7xl mx-auto no-scrollbar screen-only print:hidden">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start pb-8">
           
           {/* ==================== LEFT COLUMN: UPLOAD & CONFIG ==================== */}
@@ -945,6 +973,227 @@ export default function ResumeReviewPage() {
                 ))
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── EXCLUSIVE PRINT REPORT DOCUMENT (SHOWN ONLY WHEN PRINTING) ── */}
+      {result && (
+        <div className="hidden print:block w-full text-slate-900 bg-white font-sans p-2 space-y-5">
+          {/* Document Header */}
+          <div className="border-b-2 border-slate-900 pb-3 flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-sm font-black tracking-wider text-slate-900 uppercase">
+                  Promptix.ai
+                </span>
+                <span className="text-slate-400">•</span>
+                <span className="text-xs font-bold text-teal-800 uppercase tracking-widest">
+                  Enterprise ATS Audit Report
+                </span>
+              </div>
+              <h1 className="text-xl font-black text-slate-900 tracking-tight">
+                Resume Intelligence & ATS Optimization
+              </h1>
+            </div>
+
+            <div className="text-right text-xs text-slate-600 font-mono space-y-0.5">
+              <div><strong>Document:</strong> {result.fileName}</div>
+              <div><strong>Date:</strong> {new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+              {role && <div className="text-[11px] text-teal-800 font-sans">Target Role Tailored</div>}
+            </div>
+          </div>
+
+          {/* Executive Score & Verdict */}
+          <div className="p-4 rounded-xl border-2 border-slate-200 bg-slate-50 flex items-center justify-between gap-6 page-break-avoid">
+            <div className="flex items-center gap-5">
+              <div className="w-16 h-16 rounded-xl bg-slate-900 text-white flex flex-col items-center justify-center shrink-0">
+                <span className="text-2xl font-black font-mono leading-none">{result.atsScore}</span>
+                <span className="text-[8px] uppercase font-bold tracking-widest text-teal-400 mt-1">/ 100 ATS</span>
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-700">Competitiveness Grade:</span>
+                  <span className="px-2 py-0.5 rounded bg-teal-100 text-teal-900 font-bold text-xs font-mono">
+                    Grade {result.grade || "B+"}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-800 italic leading-relaxed">
+                  "{result.atsVerdict}"
+                </p>
+              </div>
+            </div>
+
+            {/* 4 Pillars Mini */}
+            {result.pillars && (
+              <div className="grid grid-cols-2 gap-2 text-center shrink-0">
+                <div className="p-1.5 px-3 rounded border border-slate-200 bg-white">
+                  <span className="text-[9px] uppercase font-bold text-slate-500 block">Parseability</span>
+                  <span className="text-xs font-black text-slate-900 font-mono">{result.pillars.parseability?.score || 85}%</span>
+                </div>
+                <div className="p-1.5 px-3 rounded border border-slate-200 bg-white">
+                  <span className="text-[9px] uppercase font-bold text-slate-500 block">Metrics Impact</span>
+                  <span className="text-xs font-black text-slate-900 font-mono">{result.pillars.quantifiableImpact?.score || 65}%</span>
+                </div>
+                <div className="p-1.5 px-3 rounded border border-slate-200 bg-white">
+                  <span className="text-[9px] uppercase font-bold text-slate-500 block">Keywords</span>
+                  <span className="text-xs font-black text-slate-900 font-mono">{result.pillars.keywordMatch?.score || 72}%</span>
+                </div>
+                <div className="p-1.5 px-3 rounded border border-slate-200 bg-white">
+                  <span className="text-[9px] uppercase font-bold text-slate-500 block">Structure</span>
+                  <span className="text-xs font-black text-slate-900 font-mono">{result.pillars.structureAndTone?.score || 88}%</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Contact Verification Checklist */}
+          {result.contactAudit && (
+            <div className="border border-slate-200 rounded-xl p-3 bg-white page-break-avoid">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                Candidate Contact & Link Audit
+              </h3>
+              <div className="grid grid-cols-5 gap-2 text-xs">
+                <div className={`p-1 rounded border text-center font-semibold ${result.contactAudit.email ? "bg-emerald-50 text-emerald-800 border-emerald-200" : "bg-rose-50 text-rose-800 border-rose-200"}`}>
+                  Email {result.contactAudit.email ? "✓ Verified" : "✗ Missing"}
+                </div>
+                <div className={`p-1 rounded border text-center font-semibold ${result.contactAudit.phone ? "bg-emerald-50 text-emerald-800 border-emerald-200" : "bg-rose-50 text-rose-800 border-rose-200"}`}>
+                  Phone {result.contactAudit.phone ? "✓ Verified" : "✗ Missing"}
+                </div>
+                <div className={`p-1 rounded border text-center font-semibold ${result.contactAudit.linkedin ? "bg-emerald-50 text-emerald-800 border-emerald-200" : "bg-amber-50 text-amber-800 border-amber-200"}`}>
+                  LinkedIn {result.contactAudit.linkedin ? "✓ Linked" : "✗ Missing"}
+                </div>
+                <div className={`p-1 rounded border text-center font-semibold ${result.contactAudit.githubOrPortfolio ? "bg-emerald-50 text-emerald-800 border-emerald-200" : "bg-amber-50 text-amber-800 border-amber-200"}`}>
+                  Portfolio {result.contactAudit.githubOrPortfolio ? "✓ Linked" : "✗ Missing"}
+                </div>
+                <div className={`p-1 rounded border text-center font-semibold ${result.contactAudit.location ? "bg-emerald-50 text-emerald-800 border-emerald-200" : "bg-slate-50 text-slate-800 border-slate-200"}`}>
+                  Location {result.contactAudit.location ? "✓ Verified" : "✗ Missing"}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Strengths & Improvements */}
+          <div className="grid grid-cols-2 gap-4 page-break-avoid">
+            <div className="border border-emerald-200 rounded-xl p-3 bg-emerald-50/50">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-900 mb-1.5">
+                ✓ Key Competitive Strengths
+              </h3>
+              <ul className="space-y-1 text-xs text-slate-800">
+                {result.strengths?.map((s, i) => (
+                  <li key={i} className="flex items-start gap-1.5">
+                    <span className="text-emerald-700 font-bold">•</span>
+                    <span>{s}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="border border-rose-200 rounded-xl p-3 bg-rose-50/50">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-rose-900 mb-1.5">
+                ⚠ Critical Optimizations
+              </h3>
+              <ul className="space-y-1 text-xs text-slate-800">
+                {result.criticalImprovements?.map((imp, i) => (
+                  <li key={i} className="flex items-start gap-1.5">
+                    <span className="text-rose-700 font-bold">•</span>
+                    <span>{imp}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          {/* Google XYZ Bullet Rewrites */}
+          {result.bulletPointFixes && result.bulletPointFixes.length > 0 && (
+            <div className="space-y-2 page-break-avoid">
+              <div className="border-b border-slate-300 pb-1">
+                <h3 className="text-xs font-black uppercase tracking-wider text-slate-900">
+                  Google XYZ Bullet Point Optimizations (Accomplished [X] as measured by [Y], by doing [Z])
+                </h3>
+              </div>
+              <div className="space-y-2">
+                {result.bulletPointFixes.map((item, idx) => (
+                  <div key={idx} className="p-2.5 rounded-lg border border-slate-200 bg-slate-50 space-y-1 page-break-avoid">
+                    <div className="text-xs text-rose-800 line-through">
+                      <strong>Before:</strong> {item.original}
+                    </div>
+                    <div className="text-xs font-semibold text-emerald-900 bg-emerald-50 p-1.5 rounded border border-emerald-200">
+                      <strong>AI Rewrite:</strong> {item.improved}
+                    </div>
+                    {item.reason && (
+                      <div className="text-[11px] text-slate-600 italic">
+                        <strong>Recruiter Rationale:</strong> {item.reason}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Keywords Breakdown */}
+          {result.keywords && (
+            <div className="space-y-2 page-break-avoid">
+              <div className="border-b border-slate-300 pb-1">
+                <h3 className="text-xs font-black uppercase tracking-wider text-slate-900">
+                  Skills & Keyword Match Analysis ({result.keywords.matchRate || 70}% Match)
+                </h3>
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="p-2.5 rounded-lg border border-emerald-200 bg-emerald-50/40">
+                  <span className="font-bold text-emerald-900 block mb-1">Matched Keywords:</span>
+                  <div className="flex flex-wrap gap-1">
+                    {result.keywords.matched?.map((kw, i) => (
+                      <span key={i} className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-900 text-[10px] font-medium">
+                        {kw}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="p-2.5 rounded-lg border border-rose-200 bg-rose-50/40">
+                  <span className="font-bold text-rose-900 block mb-1">Missing Keywords to Add:</span>
+                  <div className="flex flex-wrap gap-1">
+                    {result.keywords.missing?.map((kw, i) => (
+                      <span key={i} className="px-1.5 py-0.5 rounded bg-rose-100 text-rose-900 text-[10px] font-medium">
+                        + {kw}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Section Breakdown Matrix */}
+          {result.sections && (
+            <div className="space-y-2 page-break-avoid">
+              <div className="border-b border-slate-300 pb-1">
+                <h3 className="text-xs font-black uppercase tracking-wider text-slate-900">
+                  Section-by-Section Quality Matrix
+                </h3>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                {Object.entries(result.sections).map(([key, sec]) => (
+                  <div key={key} className="p-2 rounded border border-slate-200 bg-slate-50 space-y-0.5">
+                    <div className="flex items-center justify-between font-bold capitalize text-slate-900">
+                      <span>{key}</span>
+                      <span className="font-mono text-teal-800">{sec.score}/10</span>
+                    </div>
+                    <p className="text-[11px] text-slate-700 leading-tight">{sec.feedback}</p>
+                    {sec.suggestion && (
+                      <p className="text-[10px] text-teal-800 italic">💡 {sec.suggestion}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Document Footer */}
+          <div className="border-t border-slate-300 pt-2 text-center text-[10px] text-slate-500 font-mono">
+            Generated by Promptix.ai ATS Engine • Confidential Career Report
           </div>
         </div>
       )}
