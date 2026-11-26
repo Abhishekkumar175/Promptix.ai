@@ -30,7 +30,7 @@ export default function Sidebar() {
 
   return (
     <aside 
-      className={`relative h-full bg-[#050812] border-r border-[#1e2434] flex flex-col pt-2 shrink-0 z-50 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)]
+      className={`relative h-full bg-[#050812] border-r border-[#1e2434] flex flex-col pt-2 shrink-0 z-50 transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] print:hidden
       ${isCollapsed ? "w-[72px]" : "w-[210px]"}`}
     >
       {/* Decorative vertical gradient line */}
