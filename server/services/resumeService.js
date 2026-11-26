@@ -167,7 +167,11 @@ You MUST respond with a single, strictly valid JSON object matching this exact s
     "<string: high priority actionable fix 1>",
     "<string: high priority actionable fix 2>",
     "<string: high priority actionable fix 3>"
-  ]
+  ],
+  "aiProfiles": {
+    "linkedInHeadline": "<string: modern, high-impact 1-line LinkedIn headline with skills and value proposition separated by vertical bars (e.g. 'Software Engineer | React, Node.js & Cloud | Building Scalable Web Apps')>",
+    "executiveSummary": "<string: an ultra-compelling 3-4 sentence professional resume summary/about me written in active voice highlighting candidate's core strengths, tech stack, and career impact>"
+  }
 }`;
 
   let lastError = null;
@@ -194,6 +198,10 @@ You MUST respond with a single, strictly valid JSON object matching this exact s
       parsed.bulletPointFixes = Array.isArray(parsed.bulletPointFixes) ? parsed.bulletPointFixes : [];
       parsed.strengths = Array.isArray(parsed.strengths) ? parsed.strengths : [];
       parsed.criticalImprovements = Array.isArray(parsed.criticalImprovements) ? parsed.criticalImprovements : [];
+      parsed.aiProfiles = parsed.aiProfiles || {
+        linkedInHeadline: "Software Engineer | Full-Stack Development | Scalable Web Applications",
+        executiveSummary: parsed.atsVerdict || "Dedicated technology professional with a proven track record of developing robust solutions, collaborating across cross-functional teams, and driving measurable engineering impact.",
+      };
 
       return parsed;
     } catch (err) {
