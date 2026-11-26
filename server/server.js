@@ -6,6 +6,7 @@ import chatRouter from "./routes/chatRoutes.js";
 import templateRouter from "./routes/templateRoutes.js";
 import pdfRouter from "./routes/pdfRoutes.js";
 import resumeRouter from "./routes/resumeRoutes.js";
+import interviewRouter from "./routes/interviewRoutes.js";
 
 const app = express();
 
@@ -27,6 +28,7 @@ app.use("/api/chat", chatRouter);           // Chat threads + SSE streaming
 app.use("/api/templates", templateRouter);  // Prompt templates (public browse)
 app.use("/api/pdf", pdfRouter);             // Chat with PDF (RAG)
 app.use("/api/resume", resumeRouter);       // Resume analysis
+app.use("/api/interview", interviewRouter); // AI Mock Interview Simulator
 
 // ── Global error handler ──
 app.use((err, req, res, next) => {
