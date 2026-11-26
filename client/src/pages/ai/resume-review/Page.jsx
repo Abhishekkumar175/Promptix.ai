@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   FileText,
   Loader2,
@@ -27,7 +28,9 @@ import {
   RotateCcw,
   ListFilter,
   Layers,
-  Award
+  Award,
+  Mic,
+  ArrowRight
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useApi } from "../../../hooks/useApi";
@@ -40,6 +43,7 @@ const SAMPLE_ROLES = [
 
 export default function ResumeReviewPage() {
   const api = useApi();
+  const navigate = useNavigate();
   const [file, setFile] = useState(null);
   const [role, setRole] = useState("");
   const [loading, setLoading] = useState(false);
@@ -56,6 +60,28 @@ export default function ResumeReviewPage() {
 
   // Copied item state
   const [copiedId, setCopiedId] = useState(null);
+
+  // Score progression calculation vs previous scan in history
+  const previousScan = history.find((h) => h.id !== result?.id);
+  const scoreDiff = (result && previousScan && typeof previousScan.ats_score === "number")
+    ? (result.atsScore || 0) - previousScan.ats_score
+    : null;
+
+  // Cross-feature bridge: Navigate to Mock Interview with tailored resume context
+  const handlePracticeInterview = () => {
+    if (!result) return;
+    navigate("/ai/interview", {
+      state: {
+        role: role.trim() || (result.sections?.experience?.suggestion ? "Full-Stack Developer" : "Software Engineer"),
+        resumeName: result.fileName,
+        atsScore: result.atsScore,
+        grade: result.grade || "B+",
+        keySkills: result.keywords?.matched?.slice(0, 6) || [],
+        summary: result.aiProfiles?.executiveSummary || result.atsVerdict,
+        difficulty: (result.atsScore >= 80 ? "Senior" : result.atsScore >= 65 ? "Mid-Level" : "Junior"),
+      },
+    });
+  };
 
   // Fetch scan history on component mount
   useEffect(() => {
@@ -529,13 +555,32 @@ export default function ResumeReviewPage() {
                         </div>
 
                         <div>
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <span className="text-xs font-bold uppercase tracking-wider text-teal-400">
                               Overall ATS Score
                             </span>
                             <span className="px-2 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold">
                               Grade {result.grade || "B+"}
                             </span>
+
+                            {/* ── POINT 1: SCORE PROGRESSION DIFF BADGE ── */}
+                            {scoreDiff !== null && (
+                              scoreDiff > 0 ? (
+                                <span className="px-2 py-0.2 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-bold flex items-center gap-1 shadow-sm shadow-emerald-500/20">
+                                  <span>🎉 +{scoreDiff} pts higher</span>
+                                  <span className="text-emerald-400/80 font-normal">({previousScan.ats_score} → {result.atsScore})</span>
+                                </span>
+                              ) : scoreDiff < 0 ? (
+                                <span className="px-2 py-0.2 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-300 text-[10px] font-bold flex items-center gap-1">
+                                  <span>🔻 {scoreDiff} pts vs previous</span>
+                                  <span className="text-rose-400/80 font-normal">({previousScan.ats_score} → {result.atsScore})</span>
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.2 rounded-full bg-white/5 border border-white/10 text-gray-400 text-[10px] font-medium">
+                                  Consistent ({result.atsScore}/100)
+                                </span>
+                              )
+                            )}
                           </div>
                           <p className="text-xs text-gray-200 italic max-w-md leading-relaxed">
                             "{result.atsVerdict}"
@@ -543,35 +588,48 @@ export default function ResumeReviewPage() {
                         </div>
                       </div>
 
-                      {/* Right: 4 Pillar Mini Badges */}
-                      {result.pillars && (
-                        <div className="grid grid-cols-2 gap-2 shrink-0 w-full md:w-auto">
-                          <div className="px-3 py-2 rounded-xl bg-white/[0.03] border border-white/5 text-center">
-                            <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Parseability</span>
-                            <span className="text-sm font-bold text-teal-400 font-mono">
-                              {result.pillars.parseability?.score || 85}%
-                            </span>
+                      {/* Right: 4 Pillar Mini Badges & Mock Interview Quick Link */}
+                      <div className="flex flex-col items-end gap-3 shrink-0 w-full md:w-auto">
+                        {result.pillars && (
+                          <div className="grid grid-cols-2 gap-2 w-full md:w-auto">
+                            <div className="px-3 py-2 rounded-xl bg-white/[0.03] border border-white/5 text-center">
+                              <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Parseability</span>
+                              <span className="text-sm font-bold text-teal-400 font-mono">
+                                {result.pillars.parseability?.score || 85}%
+                              </span>
+                            </div>
+                            <div className="px-3 py-2 rounded-xl bg-white/[0.03] border border-white/5 text-center">
+                              <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Impact & Metrics</span>
+                              <span className="text-sm font-bold text-emerald-400 font-mono">
+                                {result.pillars.quantifiableImpact?.score || 65}%
+                              </span>
+                            </div>
+                            <div className="px-3 py-2 rounded-xl bg-white/[0.03] border border-white/5 text-center">
+                              <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Keywords</span>
+                              <span className="text-sm font-bold text-teal-300 font-mono">
+                                {result.pillars.keywordMatch?.score || 72}%
+                              </span>
+                            </div>
+                            <div className="px-3 py-2 rounded-xl bg-white/[0.03] border border-white/5 text-center">
+                              <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Structure</span>
+                              <span className="text-sm font-bold text-emerald-300 font-mono">
+                                {result.pillars.structureAndTone?.score || 88}%
+                              </span>
+                            </div>
                           </div>
-                          <div className="px-3 py-2 rounded-xl bg-white/[0.03] border border-white/5 text-center">
-                            <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Impact & Metrics</span>
-                            <span className="text-sm font-bold text-emerald-400 font-mono">
-                              {result.pillars.quantifiableImpact?.score || 65}%
-                            </span>
-                          </div>
-                          <div className="px-3 py-2 rounded-xl bg-white/[0.03] border border-white/5 text-center">
-                            <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Keywords</span>
-                            <span className="text-sm font-bold text-teal-300 font-mono">
-                              {result.pillars.keywordMatch?.score || 72}%
-                            </span>
-                          </div>
-                          <div className="px-3 py-2 rounded-xl bg-white/[0.03] border border-white/5 text-center">
-                            <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Structure</span>
-                            <span className="text-sm font-bold text-emerald-300 font-mono">
-                              {result.pillars.structureAndTone?.score || 88}%
-                            </span>
-                          </div>
-                        </div>
-                      )}
+                        )}
+
+                        {/* ── POINT 2: CROSS-FEATURE BRIDGE TO MOCK INTERVIEW ── */}
+                        <button
+                          onClick={handlePracticeInterview}
+                          className="w-full flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-linear-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white text-xs font-bold shadow-md shadow-amber-500/20 transition-all cursor-pointer hover:scale-[1.02]"
+                          title="Practice tailored mock interview for this role and resume"
+                        >
+                          <Mic size={13} className="animate-pulse" />
+                          <span>Practice Interview with this Resume</span>
+                          <ArrowRight size={13} />
+                        </button>
+                      </div>
                     </div>
 
                     {/* Nav Tabs */}
@@ -711,6 +769,108 @@ export default function ResumeReviewPage() {
                             </div>
                           </div>
                         )}
+
+                        {/* ── POINT 4: AI SUMMARY & LINKEDIN HEADLINE GENERATOR ── */}
+                        {result.aiProfiles && (
+                          <div className="p-5 rounded-2xl bg-linear-to-br from-[#0B1520] to-[#0B101A] border border-teal-500/20 space-y-4 shadow-xl">
+                            <div className="flex items-center justify-between border-b border-white/5 pb-2.5">
+                              <h4 className="text-xs font-bold uppercase tracking-wider text-teal-300 flex items-center gap-2">
+                                <Sparkles size={14} className="text-teal-400" />
+                                <span>AI Generated Profile Summary & LinkedIn Headline</span>
+                              </h4>
+                              <span className="text-[10px] text-teal-400 font-mono">1-Click Copy</span>
+                            </div>
+
+                            {/* LinkedIn Headline */}
+                            {result.aiProfiles.linkedInHeadline && (
+                              <div className="space-y-1.5">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[11px] font-semibold text-gray-300 flex items-center gap-1.5">
+                                    <Linkedin size={12} className="text-sky-400" />
+                                    <span>Optimized LinkedIn Headline</span>
+                                  </span>
+                                  <button
+                                    onClick={() => handleCopyText(result.aiProfiles.linkedInHeadline, "headline")}
+                                    className="flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-white/5 hover:bg-white/10 text-teal-300 text-[10px] font-semibold transition-all border border-white/10 cursor-pointer"
+                                  >
+                                    {copiedId === "headline" ? (
+                                      <>
+                                        <Check size={11} className="text-emerald-400" />
+                                        <span className="text-emerald-400">Copied!</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Copy size={11} />
+                                        <span>Copy Headline</span>
+                                      </>
+                                    )}
+                                  </button>
+                                </div>
+                                <div className="p-2.5 rounded-xl bg-black/40 border border-white/5 text-xs text-gray-200 font-mono select-all">
+                                  {result.aiProfiles.linkedInHeadline}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Resume Executive Summary */}
+                            {result.aiProfiles.executiveSummary && (
+                              <div className="space-y-1.5 pt-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[11px] font-semibold text-gray-300 flex items-center gap-1.5">
+                                    <Briefcase size={12} className="text-teal-400" />
+                                    <span>ATS Executive Resume Summary (About Me)</span>
+                                  </span>
+                                  <button
+                                    onClick={() => handleCopyText(result.aiProfiles.executiveSummary, "summary")}
+                                    className="flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-white/5 hover:bg-white/10 text-teal-300 text-[10px] font-semibold transition-all border border-white/10 cursor-pointer"
+                                  >
+                                    {copiedId === "summary" ? (
+                                      <>
+                                        <Check size={11} className="text-emerald-400" />
+                                        <span className="text-emerald-400">Copied!</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Copy size={11} />
+                                        <span>Copy Summary</span>
+                                      </>
+                                    )}
+                                  </button>
+                                </div>
+                                <p className="p-3 rounded-xl bg-black/40 border border-white/5 text-xs text-gray-200 leading-relaxed font-sans select-all">
+                                  {result.aiProfiles.executiveSummary}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* ── POINT 2: CROSS-FEATURE BRIDGE CTA BANNER ── */}
+                        <div className="p-4 rounded-2xl bg-linear-to-r from-amber-950/40 via-black/40 to-orange-950/30 border border-amber-500/20 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+                              <Mic size={20} className="animate-pulse" />
+                            </div>
+                            <div>
+                              <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                                <span>Ready for Technical & Behavioral Screenings?</span>
+                                <span className="px-2 py-0.2 rounded bg-amber-500/20 text-amber-300 text-[10px] font-mono">Mock Bot</span>
+                              </h4>
+                              <p className="text-xs text-gray-300 mt-0.5">
+                                Practice real-time interview questions tailored to <strong className="text-white">{result.fileName}</strong> and your target skills.
+                              </p>
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={handlePracticeInterview}
+                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-linear-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white text-xs font-bold shadow-lg shadow-amber-500/25 transition-all cursor-pointer hover:scale-105 shrink-0"
+                          >
+                            <span>Start Mock Interview</span>
+                            <ArrowRight size={13} />
+                          </button>
+                        </div>
+
                       </div>
                     )}
 
@@ -1070,6 +1230,25 @@ export default function ResumeReviewPage() {
                   Location {result.contactAudit.location ? "✓ Verified" : "✗ Missing"}
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* AI Profile & Summary in Print */}
+          {result.aiProfiles && (
+            <div className="border border-slate-200 rounded-xl p-3 bg-slate-50 page-break-avoid space-y-1.5 text-xs">
+              <h3 className="font-bold uppercase tracking-wider text-slate-800">
+                AI Optimized Executive Profile
+              </h3>
+              {result.aiProfiles.linkedInHeadline && (
+                <div className="text-slate-700">
+                  <strong>LinkedIn Headline:</strong> <span className="font-mono text-slate-900">{result.aiProfiles.linkedInHeadline}</span>
+                </div>
+              )}
+              {result.aiProfiles.executiveSummary && (
+                <div className="text-slate-700">
+                  <strong>Executive Summary:</strong> <span className="italic font-serif">{result.aiProfiles.executiveSummary}</span>
+                </div>
+              )}
             </div>
           )}
 
