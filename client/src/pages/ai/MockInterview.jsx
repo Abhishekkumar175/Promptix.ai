@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { Mic, Briefcase, Target, Play, Square, Loader2, Send, Volume2, Activity, Wifi, Clock, Eye, ShieldCheck, Code, Users, Box } from "lucide-react";
+import { useLocation } from "react-router-dom";
+import { Mic, Briefcase, Target, Play, Square, Loader2, Send, Volume2, Activity, Wifi, Clock, Eye, ShieldCheck, Code, Users, Box, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const containerVariants = {
@@ -24,9 +25,12 @@ const INTERVIEW_TYPES = [
 const DIFFICULTIES = ["Junior", "Mid-Level", "Senior", "Executive"];
 
 export default function MockInterview() {
-  const [role, setRole] = useState("");
+  const location = useLocation();
+  const resumeContext = location.state?.resumeName ? location.state : null;
+
+  const [role, setRole] = useState(location.state?.role || "");
   const [type, setType] = useState("tech");
-  const [difficulty, setDifficulty] = useState("Mid-Level");
+  const [difficulty, setDifficulty] = useState(location.state?.difficulty || "Mid-Level");
 
   const [sessionState, setSessionState] = useState("idle"); // idle | starting | active
   const [messages, setMessages] = useState([]);
@@ -37,6 +41,16 @@ export default function MockInterview() {
   const [elapsedTime, setElapsedTime] = useState(0);
 
   const chatEndRef = useRef(null);
+
+  // Sync state if coming from resume review navigation
+  useEffect(() => {
+    if (location.state?.role) {
+      setRole(location.state.role);
+    }
+    if (location.state?.difficulty) {
+      setDifficulty(location.state.difficulty);
+    }
+  }, [location.state]);
 
   // Auto scroll logic for chat module
   useEffect(() => {
@@ -70,10 +84,14 @@ export default function MockInterview() {
     // Simulating hardware check and initialization
     setTimeout(() => {
       setSessionState("active");
+      const introText = resumeContext?.keySkills?.length
+        ? `Hello! I'm your AI recruiter today. I've reviewed your resume (${resumeContext.resumeName}, ATS Score: ${resumeContext.atsScore}/100) for the ${role} position. We'll do a ${difficulty} ${type} interview focusing on your background in ${resumeContext.keySkills.join(', ')}. Let's start: Could you briefly walk me through your background and your most technically challenging project?`
+        : `Hello! I'm your AI recruiter today. We'll be doing a ${difficulty} ${type} interview for the ${role} position. Let's start with an easy one: Could you briefly walk me through your background?`;
+
       setMessages([
-        { role: "ai", text: `Hello! I'm your AI recruiter today. We'll be doing a ${difficulty} ${type} interview for the ${role} position. Let's start with an easy one: Could you briefly walk me through your background?` }
+        { role: "ai", text: introText }
       ]);
-    }, 3500);
+    }, 2500);
   };
 
   const handleSendMessage = () => {
@@ -130,6 +148,32 @@ export default function MockInterview() {
 
               <div className="flex-1 space-y-5 relative z-10">
                 
+                {/* Resume Bridge Context Alert */}
+                {resumeContext && (
+                  <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 space-y-1.5 shadow-md animate-in fade-in duration-300">
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 text-xs font-bold text-amber-300 uppercase tracking-wider">
+                        <Sparkles size={13} className="text-amber-400" /> Resume Linked
+                      </span>
+                      <span className="px-2 py-0.2 rounded-md bg-amber-500/20 text-amber-300 text-[10px] font-bold font-mono border border-amber-500/30">
+                        ATS {resumeContext.atsScore}/100
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-gray-300 leading-tight">
+                      Interview tailored to <strong className="text-white">{resumeContext.resumeName}</strong>
+                    </p>
+                    {resumeContext.keySkills && resumeContext.keySkills.length > 0 && (
+                      <div className="flex flex-wrap gap-1 pt-1">
+                        {resumeContext.keySkills.map((sk, i) => (
+                          <span key={i} className="px-1.5 py-0.2 rounded bg-white/5 border border-white/5 text-[9px] text-amber-200">
+                            {sk}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Target Role */}
                 <div className="space-y-2">
                   <label className="flex items-center gap-2 text-[12px] font-semibold text-gray-300">
