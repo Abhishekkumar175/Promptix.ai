@@ -166,15 +166,14 @@ export default function ResumeReviewPage() {
   };
 
   return (
-    <div className="h-full w-full bg-[#030712] text-white flex flex-col relative overflow-y-auto overflow-x-hidden no-scrollbar">
+    <div className="h-full w-full bg-[#030712] text-white flex flex-col relative overflow-hidden">
       {/* Background Ambience */}
       <div className="fixed top-[-5%] left-[-10%] w-[500px] h-[500px] bg-teal-600/10 rounded-full blur-[140px] pointer-events-none z-0" />
       <div className="fixed bottom-0 right-[-10%] w-[600px] h-[600px] bg-emerald-600/10 rounded-full blur-[140px] pointer-events-none z-0" />
 
-      <main className="flex-1 p-4 md:p-6 lg:p-8 relative z-10 w-full max-w-7xl mx-auto space-y-6">
-        
-        {/* Top Header Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-4">
+      {/* FIXED / NON-SCROLLABLE TOP HEADER BAR */}
+      <header className="shrink-0 px-4 md:px-6 lg:px-8 py-3.5 border-b border-white/5 bg-[#030712]/95 backdrop-blur-xl z-20">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <span className="px-2 py-0.5 rounded-md bg-teal-500/10 border border-teal-500/20 text-teal-400 text-[11px] font-semibold uppercase tracking-wider flex items-center gap-1">
@@ -215,9 +214,11 @@ export default function ResumeReviewPage() {
             )}
           </div>
         </div>
+      </header>
 
-        {/* ── 2-COLUMN MAIN WORKSPACE ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      {/* SCROLLABLE MAIN CONTENT AREA */}
+      <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 relative z-10 w-full max-w-7xl mx-auto no-scrollbar">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start pb-8">
           
           {/* ==================== LEFT COLUMN: UPLOAD & CONFIG ==================== */}
           <div className="lg:col-span-4 space-y-5">
@@ -391,11 +392,9 @@ export default function ResumeReviewPage() {
               
               {/* Report Header Bar */}
               <div className="h-12 border-b border-white/5 px-6 flex items-center justify-between bg-black/40 shrink-0">
-                <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-red-500/40 border border-red-500/60" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-amber-500/40 border border-amber-500/60" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/40 border border-emerald-500/60" />
-                  <span className="text-xs font-bold text-gray-400 ml-2 tracking-wide">
+                <div className="flex items-center gap-2.5">
+                  <Briefcase size={14} className="text-teal-400" />
+                  <span className="text-xs font-bold text-gray-300 tracking-wide">
                     {result ? result.fileName : "Audit Results Canvas"}
                   </span>
                 </div>
