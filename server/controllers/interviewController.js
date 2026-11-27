@@ -29,9 +29,9 @@ export const startSession = async (req, res) => {
     // 2. Create session in DB
     const [session] = await sql`
       INSERT INTO interview_sessions (
-        user_id, role, type, difficulty, resume_context, status
+        user_id, role, type, difficulty, resume_context, status, current_phase
       ) VALUES (
-        ${userId}, ${role.trim()}, ${type}, ${difficulty}, ${resumeContext ? JSON.stringify(resumeContext) : null}, 'active'
+        ${userId}, ${role.trim()}, ${type}, ${difficulty}, ${resumeContext ? JSON.stringify(resumeContext) : null}, 'active', 1
       )
       RETURNING *
     `;
@@ -50,6 +50,10 @@ export const startSession = async (req, res) => {
       success: true,
       session,
       openingMessage: aiMessage,
+      currentPhase: 1,
+      phaseLabel: "Background & Alignment",
+      questionNumber: 1,
+      totalExpectedQuestions: 6,
     });
   } catch (err) {
     console.error("Start interview session error:", err);
@@ -95,12 +99,14 @@ export const sendMessage = async (req, res) => {
       RETURNING *
     `;
 
-    // 3. Retrieve recent conversation history
+    // 3. Retrieve recent conversation history & calculate question turn count
     const history = await sql`
       SELECT role, content FROM interview_messages
       WHERE session_id = ${id}
       ORDER BY created_at ASC
     `;
+
+    const userAnswersCount = history.filter((m) => m.role === "user").length;
 
     // 4. AI evaluates turn and generates follow-up
     const turnResult = await processInterviewTurn({
@@ -110,6 +116,8 @@ export const sendMessage = async (req, res) => {
       resumeContext: session.resume_context,
       history,
       userResponse: message.trim(),
+      currentPhase: session.current_phase || 1,
+      questionCount: userAnswersCount,
     });
 
     // 5. Store micro_feedback on candidate's message
@@ -132,20 +140,23 @@ export const sendMessage = async (req, res) => {
       RETURNING *
     `;
 
-    // 7. Update duration telemetry
-    if (elapsedTime > session.duration_seconds) {
-      await sql`
-        UPDATE interview_sessions
-        SET duration_seconds = ${elapsedTime}
-        WHERE id = ${id}
-      `;
-    }
+    // 7. Update duration & current phase telemetry
+    await sql`
+      UPDATE interview_sessions
+      SET duration_seconds = GREATEST(duration_seconds, ${elapsedTime}),
+          current_phase = ${turnResult.nextPhase || session.current_phase || 1}
+      WHERE id = ${id}
+    `;
 
     res.json({
       success: true,
       userMessage: userMsg,
       aiMessage: aiMsg,
       microFeedback: turnResult.microFeedback,
+      currentPhase: turnResult.nextPhase || 1,
+      phaseLabel: turnResult.phaseLabel || "Interview In Progress",
+      questionNumber: userAnswersCount + 1,
+      totalExpectedQuestions: 6,
       isReadyToEnd: turnResult.isReadyToEnd,
     });
   } catch (err) {
