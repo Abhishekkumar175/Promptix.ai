@@ -67,8 +67,8 @@ const DIFFICULTIES = ["Junior", "Mid-Level", "Senior", "Executive"];
 export const PHASES = [
   {
     id: 1,
-    name: "Background & Alignment",
-    short: "1. Intro",
+    name: "Warm Intro & Background",
+    short: "1. Warm Intro",
     icon: ShieldCheck,
   },
   { id: 2, name: "Core Technical Drill", short: "2. Core Drill", icon: Code },
@@ -105,7 +105,7 @@ export default function MockInterview() {
 
   // 4-Phase Lifecycle & Progression state
   const [currentPhase, setCurrentPhase] = useState(1);
-  const [phaseLabel, setPhaseLabel] = useState("Background & Alignment");
+  const [phaseLabel, setPhaseLabel] = useState("Warm Intro & Background");
   const [questionNumber, setQuestionNumber] = useState(1);
   const [totalExpectedQuestions, setTotalExpectedQuestions] = useState(6);
 
