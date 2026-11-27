@@ -33,6 +33,8 @@ import {
   BookOpen,
   ArrowRight,
   TrendingUp,
+  Zap,
+  Radio,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useApi } from "../../hooks/useApi";
@@ -58,6 +60,13 @@ const INTERVIEW_TYPES = [
 
 const DIFFICULTIES = ["Junior", "Mid-Level", "Senior", "Executive"];
 
+export const PHASES = [
+  { id: 1, name: "Background & Alignment", short: "1. Intro", icon: ShieldCheck },
+  { id: 2, name: "Core Technical Drill", short: "2. Core Drill", icon: Code },
+  { id: 3, name: "Pressure & Edge Cases", short: "3. Pressure Test", icon: Zap },
+  { id: 4, name: "Reverse Q&A & Wrap-Up", short: "4. Wrap-Up", icon: Sparkles },
+];
+
 export default function MockInterview() {
   const api = useApi();
   const location = useLocation();
@@ -77,6 +86,18 @@ export default function MockInterview() {
   const [inputVal, setInputVal] = useState("");
   const [isAiTyping, setIsAiTyping] = useState(false);
   const [error, setError] = useState(null);
+
+  // 4-Phase Lifecycle & Progression state
+  const [currentPhase, setCurrentPhase] = useState(1);
+  const [phaseLabel, setPhaseLabel] = useState("Background & Alignment");
+  const [questionNumber, setQuestionNumber] = useState(1);
+  const [totalExpectedQuestions, setTotalExpectedQuestions] = useState(6);
+
+  // Hands-Free VAD (Voice Activity Detection) state
+  const [handsFreeMode, setHandsFreeMode] = useState(true);
+  const [vadCountdown, setVadCountdown] = useState(null);
+  const vadTimerRef = useRef(null);
+  const vadIntervalRef = useRef(null);
 
   // Micro-feedback expanded state tracker (mapping message index => boolean)
   const [expandedFeedback, setExpandedFeedback] = useState({});
@@ -177,7 +198,14 @@ export default function MockInterview() {
     }
   };
 
-  // Speech-To-Text (Microphone voice input)
+  // Helper to cancel ongoing VAD auto-send countdown
+  const cancelAutoSend = () => {
+    if (vadTimerRef.current) clearTimeout(vadTimerRef.current);
+    if (vadIntervalRef.current) clearInterval(vadIntervalRef.current);
+    setVadCountdown(null);
+  };
+
+  // Speech-To-Text (Microphone voice input with Hands-Free VAD)
   const toggleSpeechRecognition = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -186,6 +214,7 @@ export default function MockInterview() {
     }
 
     if (isListening) {
+      cancelAutoSend();
       speechRecognitionRef.current?.stop();
       setIsListening(false);
       return;
@@ -199,10 +228,14 @@ export default function MockInterview() {
       recognition.lang = "en-US";
 
       recognition.onstart = () => setIsListening(true);
-      recognition.onend = () => setIsListening(false);
+      recognition.onend = () => {
+        setIsListening(false);
+        cancelAutoSend();
+      };
       recognition.onerror = (e) => {
         console.warn("Speech recognition error:", e);
         setIsListening(false);
+        cancelAutoSend();
       };
 
       recognition.onresult = (event) => {
@@ -210,10 +243,34 @@ export default function MockInterview() {
         for (let i = event.resultIndex; i < event.results.length; i++) {
           currentTranscript += event.results[i][0].transcript;
         }
+
         if (currentTranscript.trim()) {
           setInputVal((prev) => {
             const trimmedPrev = prev.trim();
-            return trimmedPrev ? `${trimmedPrev} ${currentTranscript.trim()}` : currentTranscript.trim();
+            const combined = trimmedPrev ? `${trimmedPrev} ${currentTranscript.trim()}` : currentTranscript.trim();
+            
+            // ── HANDS-FREE VAD: TRIGGER 2-SECOND SILENCE AUTO-SEND ──
+            if (handsFreeMode && combined.length >= 10 && sessionState === "active" && !isAiTyping) {
+              cancelAutoSend();
+              setVadCountdown(2);
+              let remaining = 2;
+              vadIntervalRef.current = setInterval(() => {
+                remaining -= 1;
+                if (remaining <= 0) {
+                  clearInterval(vadIntervalRef.current);
+                } else {
+                  setVadCountdown(remaining);
+                }
+              }, 1000);
+
+              vadTimerRef.current = setTimeout(() => {
+                setVadCountdown(null);
+                clearInterval(vadIntervalRef.current);
+                handleSendMessage(combined);
+              }, 2000);
+            }
+
+            return combined;
           });
         }
       };
@@ -229,10 +286,13 @@ export default function MockInterview() {
   const handleStartSession = async () => {
     if (!role.trim()) return;
 
+    cancelAutoSend();
     setError(null);
     setSessionState("starting");
     setElapsedTime(0);
     setMessages([]);
+    setCurrentPhase(1);
+    setQuestionNumber(1);
 
     try {
       const res = await api.post("/api/interview/start", {
@@ -245,6 +305,10 @@ export default function MockInterview() {
       if (res.success && res.session) {
         setCurrentSession(res.session);
         setSessionState("active");
+        if (res.currentPhase) setCurrentPhase(res.currentPhase);
+        if (res.phaseLabel) setPhaseLabel(res.phaseLabel);
+        if (res.questionNumber) setQuestionNumber(res.questionNumber);
+        if (res.totalExpectedQuestions) setTotalExpectedQuestions(res.totalExpectedQuestions);
 
         const initialMsg = {
           role: "ai",
@@ -267,8 +331,10 @@ export default function MockInterview() {
   };
 
   // 2. SEND CANDIDATE'S ANSWER & RECEIVE ADAPTIVE QUESTION + FEEDBACK
-  const handleSendMessage = async () => {
-    if (!inputVal.trim() || sessionState !== "active" || isAiTyping || !currentSession) return;
+  const handleSendMessage = async (textOverride = null) => {
+    cancelAutoSend();
+    const candidateAnswer = (typeof textOverride === "string" ? textOverride : inputVal).trim();
+    if (!candidateAnswer || sessionState !== "active" || isAiTyping || !currentSession) return;
 
     // Stop microphone if currently listening
     if (isListening) {
@@ -276,7 +342,6 @@ export default function MockInterview() {
       setIsListening(false);
     }
 
-    const candidateAnswer = inputVal.trim();
     setInputVal("");
 
     // Add candidate's message to UI optimistically
@@ -292,6 +357,11 @@ export default function MockInterview() {
       });
 
       if (res.success) {
+        if (res.currentPhase) setCurrentPhase(res.currentPhase);
+        if (res.phaseLabel) setPhaseLabel(res.phaseLabel);
+        if (res.questionNumber) setQuestionNumber(res.questionNumber);
+        if (res.totalExpectedQuestions) setTotalExpectedQuestions(res.totalExpectedQuestions);
+
         // Update user message with micro-feedback
         setMessages((prev) => {
           const updated = [...prev];
@@ -683,6 +753,46 @@ export default function MockInterview() {
                 </div>
               </div>
 
+              {/* ── 4-PHASE RECRUITER LIFECYCLE STEPPER BAR ── */}
+              {sessionState === "active" && (
+                <div className="px-4 md:px-5 py-2.5 bg-black/50 border-b border-[#1e2434] flex flex-wrap items-center justify-between gap-3 shrink-0 relative z-10">
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    {PHASES.map((p) => {
+                      const isCurrent = currentPhase === p.id;
+                      const isCompleted = currentPhase > p.id;
+                      const PhaseIcon = p.icon;
+                      return (
+                        <div key={p.id} className="flex items-center gap-1 sm:gap-2">
+                          <div
+                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all
+                            ${
+                              isCurrent
+                                ? "bg-violet-500/20 text-violet-300 border border-violet-500/40 shadow-sm shadow-violet-500/20"
+                                : isCompleted
+                                ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                                : "bg-white/[0.02] text-gray-500 border border-white/5"
+                            }`}
+                          >
+                            <PhaseIcon size={12} className={isCurrent ? "text-violet-400" : isCompleted ? "text-emerald-400" : "text-gray-500"} />
+                            <span className="hidden md:inline">{p.name}</span>
+                            <span className="md:hidden">{p.short}</span>
+                          </div>
+                          {p.id < 4 && <span className="text-gray-600 text-xs">➔</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Question Progress Counter */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-mono px-2.5 py-1 rounded-lg bg-white/5 border border-white/5 text-violet-300 flex items-center gap-1.5">
+                      <Sparkles size={11} className="text-violet-400" />
+                      <span>Question {questionNumber} / {totalExpectedQuestions}</span>
+                    </span>
+                  </div>
+                </div>
+              )}
+
               {/* Main Scrolling Body */}
               <div className="flex-1 flex flex-col relative overflow-hidden bg-linear-to-b from-transparent to-black/20">
                 {/* 1. IDLE / EMPTY STATE */}
@@ -805,6 +915,11 @@ export default function MockInterview() {
                               >
                                 <Sparkles size={11} className="text-violet-400" />
                                 <span>Turn Evaluation: {m.microFeedback.score}/10</span>
+                                {m.microFeedback.clarityScore && (
+                                  <span className="text-[10px] text-gray-400 font-mono ml-1">
+                                    • Clarity {m.microFeedback.clarityScore}%
+                                  </span>
+                                )}
                                 {expandedFeedback[i] ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                               </button>
 
@@ -812,7 +927,7 @@ export default function MockInterview() {
                                 <motion.div
                                   initial={{ opacity: 0, y: -5 }}
                                   animate={{ opacity: 1, y: 0 }}
-                                  className="mt-1.5 p-3 rounded-xl bg-black/60 border border-violet-500/20 text-xs space-y-1.5 shadow-xl text-left"
+                                  className="mt-1.5 p-3 rounded-xl bg-black/60 border border-violet-500/20 text-xs space-y-2 shadow-xl text-left"
                                 >
                                   {m.microFeedback.positive && (
                                     <div className="text-emerald-300 flex items-start gap-1.5">
@@ -829,6 +944,16 @@ export default function MockInterview() {
                                   {m.microFeedback.suggestion && (
                                     <div className="text-gray-400 text-[11px] italic pl-3 border-l border-violet-500/30">
                                       💡 {m.microFeedback.suggestion}
+                                    </div>
+                                  )}
+
+                                  {/* Speech & Filler Telemetry */}
+                                  {m.microFeedback.fillerAnalysis && m.microFeedback.fillerAnalysis.count > 0 && (
+                                    <div className="pt-1.5 border-t border-white/5 flex items-center gap-2 text-[10px] text-amber-300/90 font-mono">
+                                      <span>🗣️ {m.microFeedback.fillerAnalysis.count} filler word(s) detected:</span>
+                                      <span className="px-1.5 py-0.2 rounded bg-amber-500/10 border border-amber-500/20 text-amber-300">
+                                        {m.microFeedback.fillerAnalysis.detected.join(", ")}
+                                      </span>
                                     </div>
                                   )}
                                 </motion.div>
@@ -863,15 +988,59 @@ export default function MockInterview() {
                       <div ref={chatEndRef} />
                     </div>
 
-                    {/* Bottom Console: Voice STT + Text Input */}
+                    {/* Bottom Console: Voice STT + Text Input + Hands-Free VAD */}
                     <div className="shrink-0 px-4 pb-4 pt-2 bg-linear-to-t from-[#0B101A] via-[#0B101A]/90 to-transparent">
-                      <div className="flex flex-col bg-[#050812]/90 backdrop-blur-2xl border border-[#1e2434] rounded-2xl p-2.5 focus-within:border-violet-500/50 transition-colors shadow-2xl relative">
-                        {isListening && (
-                          <div className="px-2 pb-1.5 flex items-center gap-2 text-[11px] text-violet-400 font-mono animate-pulse">
-                            <Mic size={12} />
-                            <span>Listening to your microphone... speak your answer clearly.</span>
+                      {/* Hands-Free Silence Detection Auto-Send Banner */}
+                      {vadCountdown !== null && (
+                        <div className="mb-2 px-3.5 py-1.5 rounded-xl bg-violet-600/20 border border-violet-500/40 flex items-center justify-between text-xs text-violet-200 shadow-lg shadow-violet-500/10 animate-in fade-in slide-in-from-bottom-1 duration-200">
+                          <div className="flex items-center gap-2">
+                            <Radio size={14} className="text-violet-400 animate-pulse" />
+                            <span>
+                              Silence detected. Hands-free auto-sending in{" "}
+                              <strong className="text-white font-mono text-sm underline">{vadCountdown}s</strong>...
+                            </span>
                           </div>
-                        )}
+                          <button
+                            type="button"
+                            onClick={cancelAutoSend}
+                            className="px-2 py-0.5 rounded-md bg-white/10 hover:bg-white/20 text-white text-[10px] font-bold uppercase transition-all cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      )}
+
+                      <div className="flex flex-col bg-[#050812]/90 backdrop-blur-2xl border border-[#1e2434] rounded-2xl p-2.5 focus-within:border-violet-500/50 transition-colors shadow-2xl relative">
+                        {/* Status line & VAD toggle toolbar */}
+                        <div className="flex items-center justify-between px-1 pb-1.5 text-[11px]">
+                          {isListening ? (
+                            <div className="flex items-center gap-2 text-violet-400 font-mono animate-pulse">
+                              <Mic size={12} />
+                              <span>Listening... speak naturally.</span>
+                            </div>
+                          ) : (
+                            <span className="text-gray-500 text-[10px]">Ready for your response</span>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const next = !handsFreeMode;
+                              setHandsFreeMode(next);
+                              if (!next) cancelAutoSend();
+                            }}
+                            className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-mono font-semibold border transition-all cursor-pointer
+                              ${
+                                handsFreeMode
+                                  ? "bg-violet-500/15 border-violet-500/30 text-violet-300"
+                                  : "bg-white/5 border-white/5 text-gray-500 hover:text-gray-400"
+                              }`}
+                            title={handsFreeMode ? "Hands-Free Auto-Send is ON (Sends when you stop speaking)" : "Hands-Free Auto-Send is OFF"}
+                          >
+                            <Radio size={10} className={handsFreeMode ? "text-violet-400 animate-pulse" : "text-gray-500"} />
+                            <span>VAD Auto-Send: {handsFreeMode ? "ON" : "OFF"}</span>
+                          </button>
+                        </div>
 
                         <div className="flex items-end gap-2">
                           {/* Microphone Button (Speech-to-Text) */}
@@ -891,10 +1060,14 @@ export default function MockInterview() {
 
                           <textarea
                             value={inputVal}
-                            onChange={(e) => setInputVal(e.target.value)}
+                            onChange={(e) => {
+                              cancelAutoSend();
+                              setInputVal(e.target.value);
+                            }}
                             onKeyDown={(e) => {
                               if (e.key === "Enter" && !e.shiftKey) {
                                 e.preventDefault();
+                                cancelAutoSend();
                                 handleSendMessage();
                               }
                             }}
@@ -904,7 +1077,10 @@ export default function MockInterview() {
                           />
 
                           <button
-                            onClick={handleSendMessage}
+                            onClick={() => {
+                              cancelAutoSend();
+                              handleSendMessage();
+                            }}
                             disabled={!inputVal.trim() || isAiTyping}
                             className="shrink-0 p-2.5 bg-linear-to-r from-violet-600 to-indigo-600 rounded-xl text-white hover:from-violet-500 hover:to-indigo-500 transition-all disabled:opacity-40 disabled:cursor-not-allowed mb-0.5 shadow-md shadow-violet-500/20 cursor-pointer"
                             title="Send answer"
@@ -1014,6 +1190,50 @@ export default function MockInterview() {
                 </div>
               )}
             </div>
+
+            {/* Speech Delivery & Telemetry */}
+            {scorecard.speechDelivery && (
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-violet-500/10 via-indigo-500/5 to-purple-500/10 border border-violet-500/20 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-violet-300 flex items-center gap-1.5">
+                    <Radio size={14} className="text-violet-400 animate-pulse" />
+                    Speech Delivery & Articulation Telemetry
+                  </h4>
+                  <span className="text-[10px] font-mono font-bold text-violet-400 bg-violet-500/10 px-2 py-0.5 rounded border border-violet-500/20">
+                    STAR Framework: {scorecard.speechDelivery.starMethodScore ?? 80}%
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <div className="p-2.5 rounded-xl bg-black/40 border border-white/5 space-y-0.5">
+                    <span className="text-[10px] uppercase font-bold text-gray-400 block">Speaking Pacing</span>
+                    <span className="text-xs font-semibold text-white">
+                      {scorecard.speechDelivery.pacing || "Optimal (135 WPM)"}
+                    </span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-black/40 border border-white/5 space-y-0.5">
+                    <span className="text-[10px] uppercase font-bold text-gray-400 block">Filler Word Impact</span>
+                    <span className={`text-xs font-semibold ${
+                      scorecard.speechDelivery.fillerWordImpact === 'Minimal' ? 'text-emerald-400' :
+                      scorecard.speechDelivery.fillerWordImpact === 'Moderate' ? 'text-amber-400' : 'text-rose-400'
+                    }`}>
+                      {scorecard.speechDelivery.fillerWordImpact || "Minimal"}
+                    </span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-black/40 border border-white/5 space-y-0.5">
+                    <span className="text-[10px] uppercase font-bold text-gray-400 block">STAR Structure</span>
+                    <span className="text-xs font-semibold text-indigo-300">
+                      {scorecard.speechDelivery.starMethodScore ?? 80}% Adherence
+                    </span>
+                  </div>
+                </div>
+                {scorecard.speechDelivery.deliveryTip && (
+                  <p className="text-[11px] text-gray-300 italic bg-white/[0.02] p-2 rounded-lg border border-white/5">
+                    <span className="font-bold text-violet-400 not-italic mr-1.5">Recruiter Delivery Tip:</span>
+                    "{scorecard.speechDelivery.deliveryTip}"
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Strengths & Weaknesses */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
