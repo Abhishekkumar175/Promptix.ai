@@ -179,20 +179,20 @@ export default function ResumeReviewPage() {
   // Helper for score badge colors
   const getScoreColor = (score) => {
     if (score >= 80) return "text-emerald-400";
-    if (score >= 65) return "text-teal-400";
+    if (score >= 65) return "text-violet-400";
     if (score >= 50) return "text-amber-400";
     return "text-rose-400";
   };
 
   const getScoreBg = (score) => {
     if (score >= 80) return "bg-emerald-500/10 border-emerald-500/20 text-emerald-400";
-    if (score >= 65) return "bg-teal-500/10 border-teal-500/20 text-teal-400";
+    if (score >= 65) return "bg-violet-500/10 border-violet-500/20 text-violet-400";
     if (score >= 50) return "bg-amber-500/10 border-amber-500/20 text-amber-400";
     return "bg-rose-500/10 border-rose-500/20 text-rose-400";
   };
 
   return (
-    <div className="h-full w-full bg-[#030712] text-white flex flex-col relative overflow-hidden print:overflow-visible print:bg-white print:h-auto">
+    <div className="h-full w-full bg-[#050812] text-white flex flex-col relative overflow-hidden print:overflow-visible print:bg-white print:h-auto">
       {/* ── PRINT MEDIA STYLES ── */}
       <style>{`
         @media print {
@@ -222,15 +222,15 @@ export default function ResumeReviewPage() {
       `}</style>
 
       {/* Background Ambience */}
-      <div className="fixed top-[-5%] left-[-10%] w-[500px] h-[500px] bg-teal-600/10 rounded-full blur-[140px] pointer-events-none z-0 print:hidden" />
-      <div className="fixed bottom-0 right-[-10%] w-[600px] h-[600px] bg-emerald-600/10 rounded-full blur-[140px] pointer-events-none z-0 print:hidden" />
+      <div className="fixed top-[-5%] left-[-10%] w-[500px] h-[500px] bg-violet-600/12 rounded-full blur-[140px] pointer-events-none z-0 print:hidden" />
+      <div className="fixed bottom-0 right-[-10%] w-[600px] h-[600px] bg-indigo-600/10 rounded-full blur-[140px] pointer-events-none z-0 print:hidden" />
 
       {/* FIXED / NON-SCROLLABLE TOP HEADER BAR (Hidden in print) */}
-      <header className="shrink-0 px-4 md:px-6 lg:px-8 py-3.5 border-b border-white/5 bg-[#030712]/95 backdrop-blur-xl z-20 print:hidden">
+      <header className="shrink-0 px-4 md:px-6 lg:px-8 py-3.5 border-b border-[#1e2434] bg-[#050812]/95 backdrop-blur-xl z-20 print:hidden">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="px-2 py-0.5 rounded-md bg-teal-500/10 border border-teal-500/20 text-teal-400 text-[11px] font-semibold uppercase tracking-wider flex items-center gap-1">
+              <span className="px-2 py-0.5 rounded-md bg-violet-500/10 border border-violet-500/20 text-violet-400 text-[11px] font-semibold uppercase tracking-wider flex items-center gap-1">
                 <Sparkles size={11} /> Enterprise ATS Engine
               </span>
               <span className="text-gray-500 text-xs">•</span>
@@ -247,10 +247,10 @@ export default function ResumeReviewPage() {
               className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-gray-300 hover:text-white transition-all cursor-pointer shadow-sm"
               title="View past resume scans"
             >
-              <History size={14} className="text-teal-400" />
+              <History size={14} className="text-violet-400" />
               <span>Past Scans</span>
               {history.length > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full bg-teal-500/20 text-teal-300 text-[10px] font-mono">
+                <span className="px-1.5 py-0.2 rounded-full bg-violet-500/20 text-violet-300 text-[10px] font-mono">
                   {history.length}
                 </span>
               )}
@@ -259,7 +259,7 @@ export default function ResumeReviewPage() {
             {result && (
               <button
                 onClick={handlePrint}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-teal-600/20 hover:bg-teal-600/30 border border-teal-500/30 text-xs font-semibold text-teal-300 hover:text-teal-200 transition-all cursor-pointer"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-violet-600/20 hover:bg-violet-600/30 border border-violet-500/30 text-xs font-semibold text-violet-300 hover:text-violet-200 transition-all cursor-pointer"
                 title="Print or save as PDF report"
               >
                 <Printer size={13} />
@@ -276,12 +276,12 @@ export default function ResumeReviewPage() {
           
           {/* ==================== LEFT COLUMN: UPLOAD & CONFIG ==================== */}
           <div className="lg:col-span-4 space-y-5">
-            <div className="bg-[#0B101A]/80 backdrop-blur-xl border border-white/10 rounded-3xl p-5 shadow-2xl relative overflow-hidden group">
-              <div className="absolute inset-0 bg-linear-to-b from-teal-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+            <div className="bg-[#0B101A]/90 backdrop-blur-xl border border-[#1e2434] rounded-3xl p-5 shadow-2xl relative overflow-hidden group">
+              <div className="absolute inset-0 bg-linear-to-b from-violet-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
               
               <div className="flex items-center gap-3 mb-5 relative z-10">
-                <div className="w-8 h-8 rounded-xl bg-linear-to-br from-teal-600/20 to-emerald-600/20 border border-teal-500/30 flex items-center justify-center shadow-inner">
-                  <FileCheck2 className="text-teal-400 w-4 h-4" />
+                <div className="w-8 h-8 rounded-xl bg-linear-to-br from-violet-600/20 to-indigo-600/20 border border-violet-500/30 flex items-center justify-center shadow-inner">
+                  <FileCheck2 className="text-violet-400 w-4 h-4" />
                 </div>
                 <div>
                   <h2 className="text-base font-bold text-white tracking-tight">Upload Resume</h2>
@@ -300,18 +300,18 @@ export default function ResumeReviewPage() {
                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                     />
                     <div className={`w-full py-6 px-4 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center text-center transition-all bg-black/40 shadow-inner
-                      ${file ? "border-teal-500/60 bg-teal-500/10" : "border-white/10 hover:border-teal-500/30 hover:bg-white/[0.02]"}`}>
+                      ${file ? "border-violet-500/60 bg-violet-500/10" : "border-white/10 hover:border-violet-500/40 hover:bg-white/[0.02]"}`}>
                       {file ? (
                         <>
-                          <div className="w-10 h-10 bg-teal-500/20 rounded-xl flex items-center justify-center mb-2 text-teal-400">
+                          <div className="w-10 h-10 bg-violet-500/20 rounded-xl flex items-center justify-center mb-2 text-violet-400">
                             <FileText size={20} />
                           </div>
-                          <span className="text-xs font-bold text-teal-200 truncate max-w-[85%]">{file.name}</span>
-                          <span className="text-[10px] text-teal-400/80 mt-0.5">Click or drag another to replace</span>
+                          <span className="text-xs font-bold text-violet-200 truncate max-w-[85%]">{file.name}</span>
+                          <span className="text-[10px] text-violet-400/80 mt-0.5">Click or drag another to replace</span>
                         </>
                       ) : (
                         <>
-                          <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center mb-2 text-gray-400 group-hover:text-teal-400 transition-colors">
+                          <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center mb-2 text-gray-400 group-hover:text-violet-400 transition-colors">
                             <UploadCloud size={20} />
                           </div>
                           <span className="text-xs font-semibold text-gray-200">Drop resume here or browse</span>
@@ -326,7 +326,7 @@ export default function ResumeReviewPage() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-semibold text-gray-300 flex items-center gap-1.5">
-                      <Target size={13} className="text-teal-400" />
+                      <Target size={13} className="text-violet-400" />
                       <span>Target Job Description</span>
                     </label>
                     {role && (
@@ -346,7 +346,7 @@ export default function ResumeReviewPage() {
                         key={i}
                         type="button"
                         onClick={() => setRole(r.text)}
-                        className="px-2 py-0.5 rounded-lg bg-white/5 hover:bg-teal-500/15 border border-white/5 hover:border-teal-500/30 text-[10px] text-gray-400 hover:text-teal-300 transition-all cursor-pointer"
+                        className="px-2 py-0.5 rounded-lg bg-white/5 hover:bg-violet-500/15 border border-white/5 hover:border-violet-500/30 text-[10px] text-gray-400 hover:text-violet-300 transition-all cursor-pointer"
                       >
                         + {r.label}
                       </button>
@@ -358,7 +358,7 @@ export default function ResumeReviewPage() {
                     onChange={(e) => setRole(e.target.value)}
                     placeholder="Paste the job description here for keyword match & tailored ATS scoring..."
                     rows={4}
-                    className="w-full rounded-xl bg-black/40 border border-white/10 p-3 text-xs text-gray-200 placeholder-gray-600 focus:outline-none focus:border-teal-500/50 focus:bg-black/60 transition-all shadow-inner resize-none leading-relaxed"
+                    className="w-full rounded-xl bg-black/40 border border-[#1e2434] p-3 text-xs text-gray-200 placeholder-gray-600 focus:outline-none focus:border-violet-500/50 focus:bg-black/60 transition-all shadow-inner resize-none leading-relaxed"
                   />
                 </div>
 
@@ -366,7 +366,7 @@ export default function ResumeReviewPage() {
                 <button
                   onClick={handleAnalyze}
                   disabled={loading || !file}
-                  className="w-full py-3 px-4 rounded-xl font-bold text-xs text-white bg-linear-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-teal-500/20 flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full py-3 px-4 rounded-xl font-bold text-xs text-white bg-linear-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-violet-500/25 flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {loading ? (
                     <>
@@ -392,14 +392,14 @@ export default function ResumeReviewPage() {
 
             {/* Quick Recent Scans list in left column */}
             {history.length > 0 && (
-              <div className="bg-[#0B101A]/60 backdrop-blur-md border border-white/10 rounded-3xl p-4 shadow-xl">
+              <div className="bg-[#0B101A]/70 backdrop-blur-md border border-[#1e2434] rounded-3xl p-4 shadow-xl">
                 <div className="flex items-center justify-between mb-3 px-1">
                   <span className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <History size={12} className="text-teal-400" /> Recent Scans
+                    <History size={12} className="text-violet-400" /> Recent Scans
                   </span>
                   <button
                     onClick={() => setShowHistoryModal(true)}
-                    className="text-[11px] text-teal-400 hover:underline cursor-pointer"
+                    className="text-[11px] text-violet-400 hover:underline cursor-pointer"
                   >
                     View All ({history.length})
                   </button>
@@ -410,10 +410,10 @@ export default function ResumeReviewPage() {
                     <div
                       key={item.id}
                       onClick={() => loadPastReview(item)}
-                      className="group p-2.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 hover:border-teal-500/30 transition-all cursor-pointer flex items-center justify-between gap-2"
+                      className="group p-2.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 hover:border-violet-500/30 transition-all cursor-pointer flex items-center justify-between gap-2"
                     >
                       <div className="min-w-0 flex-1">
-                        <p className="text-xs font-semibold text-gray-200 group-hover:text-teal-300 truncate transition-colors">
+                        <p className="text-xs font-semibold text-gray-200 group-hover:text-violet-300 truncate transition-colors">
                           {item.file_name}
                         </p>
                         <p className="text-[10px] text-gray-500 font-mono mt-0.5">
@@ -442,19 +442,19 @@ export default function ResumeReviewPage() {
 
           {/* ==================== RIGHT COLUMN: ANALYSIS REPORT ==================== */}
           <div className="lg:col-span-8">
-            <div className="bg-[#0B101A]/80 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl min-h-[580px] flex flex-col">
+            <div className="bg-[#0B101A]/90 backdrop-blur-xl border border-[#1e2434] rounded-3xl overflow-hidden shadow-2xl min-h-[580px] flex flex-col">
               
               {/* Report Header Bar */}
-              <div className="h-12 border-b border-white/5 px-6 flex items-center justify-between bg-black/40 shrink-0">
+              <div className="h-12 border-b border-[#1e2434] px-6 flex items-center justify-between bg-black/40 shrink-0">
                 <div className="flex items-center gap-2.5">
-                  <Briefcase size={14} className="text-teal-400" />
+                  <Briefcase size={14} className="text-violet-400" />
                   <span className="text-xs font-bold text-gray-300 tracking-wide">
                     {result ? result.fileName : "Audit Results Canvas"}
                   </span>
                 </div>
 
                 {result && (
-                  <span className="px-2.5 py-0.5 rounded-md bg-teal-500/10 border border-teal-500/20 text-teal-400 text-[10px] font-mono font-bold">
+                  <span className="px-2.5 py-0.5 rounded-md bg-violet-500/10 border border-violet-500/20 text-violet-400 text-[10px] font-mono font-bold">
                     Grade {result.grade || "B+"}
                   </span>
                 )}
@@ -466,7 +466,7 @@ export default function ResumeReviewPage() {
                 {/* 1. EMPTY STATE */}
                 {!result && !loading && (
                   <div className="h-full py-16 flex flex-col items-center justify-center text-center max-w-md mx-auto">
-                    <div className="w-16 h-16 rounded-2xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center mb-4 text-teal-400 shadow-[0_0_40px_rgba(20,184,166,0.15)]">
+                    <div className="w-16 h-16 rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center mb-4 text-violet-400 shadow-[0_0_40px_rgba(139,92,246,0.15)]">
                       <FileCheck2 size={28} />
                     </div>
                     <h3 className="text-lg font-bold text-white mb-2">Awaiting Resume Document</h3>
@@ -476,11 +476,11 @@ export default function ResumeReviewPage() {
 
                     <div className="grid grid-cols-2 gap-3 w-full text-left">
                       <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5">
-                        <span className="text-teal-400 text-xs font-bold block mb-1">⚡ Bullet Rewrites</span>
+                        <span className="text-violet-400 text-xs font-bold block mb-1">⚡ Bullet Rewrites</span>
                         <p className="text-[11px] text-gray-400">Transform weak duties into quantified business outcomes.</p>
                       </div>
                       <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5">
-                        <span className="text-teal-400 text-xs font-bold block mb-1">🎯 Keyword Gap</span>
+                        <span className="text-violet-400 text-xs font-bold block mb-1">🎯 Keyword Gap</span>
                         <p className="text-[11px] text-gray-400">Discover critical technical skills missing from your profile.</p>
                       </div>
                     </div>
@@ -490,9 +490,9 @@ export default function ResumeReviewPage() {
                 {/* 2. LOADING STATE WITH SCANNER ANIMATION */}
                 {loading && (
                   <div className="h-full py-20 flex flex-col items-center justify-center text-center">
-                    <div className="relative w-32 h-44 mb-6 rounded-2xl border-2 border-teal-500/30 overflow-hidden bg-black/60 shadow-[0_0_50px_rgba(20,184,166,0.2)]">
+                    <div className="relative w-32 h-44 mb-6 rounded-2xl border-2 border-violet-500/30 overflow-hidden bg-black/60 shadow-[0_0_50px_rgba(139,92,246,0.2)]">
                       <div className="p-3 space-y-2">
-                        <div className="h-2.5 bg-teal-500/20 rounded-full w-2/3" />
+                        <div className="h-2.5 bg-violet-500/20 rounded-full w-2/3" />
                         <div className="h-2 bg-white/10 rounded-full w-full" />
                         <div className="h-2 bg-white/10 rounded-full w-4/5" />
                         <div className="h-2 bg-white/10 rounded-full w-full mt-3" />
@@ -504,12 +504,12 @@ export default function ResumeReviewPage() {
                         initial={{ y: -10 }}
                         animate={{ y: 170 }}
                         transition={{ repeat: Infinity, duration: 1.8, ease: "linear" }}
-                        className="absolute left-0 right-0 h-1 bg-teal-400 shadow-[0_0_20px_rgba(45,212,191,1)]"
+                        className="absolute left-0 right-0 h-1 bg-violet-400 shadow-[0_0_20px_rgba(139,92,246,1)]"
                       />
                     </div>
 
                     <h4 className="text-base font-bold text-white mb-1.5 flex items-center gap-2">
-                      <Sparkles size={16} className="text-teal-400 animate-pulse" />
+                      <Sparkles size={16} className="text-violet-400 animate-pulse" />
                       Benchmarking Against Fortune 500 ATS
                     </h4>
                     <p className="text-xs text-gray-400 max-w-xs font-mono">
@@ -523,7 +523,7 @@ export default function ResumeReviewPage() {
                   <div className="space-y-6">
                     
                     {/* Top Score Banner */}
-                    <div className="p-5 rounded-2xl bg-linear-to-r from-teal-950/40 via-black/40 to-emerald-950/30 border border-white/10 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl">
+                    <div className="p-5 rounded-2xl bg-linear-to-r from-violet-950/40 via-black/40 to-indigo-950/30 border border-[#1e2434] flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl">
                       {/* Left: Circular gauge */}
                       <div className="flex items-center gap-5">
                         <div className="relative w-24 h-24 shrink-0">
@@ -539,8 +539,8 @@ export default function ResumeReviewPage() {
                             />
                             <defs>
                               <linearGradient id="atsGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" stopColor="#14b8a6" />
-                                <stop offset="100%" stopColor="#10b981" />
+                                <stop offset="0%" stopColor="#8b5cf6" />
+                                <stop offset="100%" stopColor="#6366f1" />
                               </linearGradient>
                             </defs>
                           </svg>
@@ -548,7 +548,7 @@ export default function ResumeReviewPage() {
                             <span className="text-2xl font-black text-white font-mono tracking-tighter">
                               {result.atsScore}
                             </span>
-                            <span className="text-[8px] uppercase tracking-widest text-teal-400 font-bold">
+                            <span className="text-[8px] uppercase tracking-widest text-violet-400 font-bold">
                               / 100
                             </span>
                           </div>
@@ -556,10 +556,10 @@ export default function ResumeReviewPage() {
 
                         <div>
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <span className="text-xs font-bold uppercase tracking-wider text-teal-400">
+                            <span className="text-xs font-bold uppercase tracking-wider text-violet-400">
                               Overall ATS Score
                             </span>
-                            <span className="px-2 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold">
+                            <span className="px-2 py-0.2 rounded-full bg-violet-500/20 text-violet-300 text-[10px] font-bold">
                               Grade {result.grade || "B+"}
                             </span>
 
@@ -594,25 +594,25 @@ export default function ResumeReviewPage() {
                           <div className="grid grid-cols-2 gap-2 w-full md:w-auto">
                             <div className="px-3 py-2 rounded-xl bg-white/[0.03] border border-white/5 text-center">
                               <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Parseability</span>
-                              <span className="text-sm font-bold text-teal-400 font-mono">
+                              <span className="text-sm font-bold text-violet-400 font-mono">
                                 {result.pillars.parseability?.score || 85}%
                               </span>
                             </div>
                             <div className="px-3 py-2 rounded-xl bg-white/[0.03] border border-white/5 text-center">
                               <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Impact & Metrics</span>
-                              <span className="text-sm font-bold text-emerald-400 font-mono">
+                              <span className="text-sm font-bold text-indigo-400 font-mono">
                                 {result.pillars.quantifiableImpact?.score || 65}%
                               </span>
                             </div>
                             <div className="px-3 py-2 rounded-xl bg-white/[0.03] border border-white/5 text-center">
                               <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Keywords</span>
-                              <span className="text-sm font-bold text-teal-300 font-mono">
+                              <span className="text-sm font-bold text-violet-300 font-mono">
                                 {result.pillars.keywordMatch?.score || 72}%
                               </span>
                             </div>
                             <div className="px-3 py-2 rounded-xl bg-white/[0.03] border border-white/5 text-center">
                               <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Structure</span>
-                              <span className="text-sm font-bold text-emerald-300 font-mono">
+                              <span className="text-sm font-bold text-indigo-300 font-mono">
                                 {result.pillars.structureAndTone?.score || 88}%
                               </span>
                             </div>
@@ -622,7 +622,7 @@ export default function ResumeReviewPage() {
                         {/* ── POINT 2: CROSS-FEATURE BRIDGE TO MOCK INTERVIEW ── */}
                         <button
                           onClick={handlePracticeInterview}
-                          className="w-full flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-linear-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white text-xs font-bold shadow-md shadow-amber-500/20 transition-all cursor-pointer hover:scale-[1.02]"
+                          className="w-full flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-linear-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-xs font-bold shadow-md shadow-violet-500/25 transition-all cursor-pointer hover:scale-[1.02]"
                           title="Practice tailored mock interview for this role and resume"
                         >
                           <Mic size={13} className="animate-pulse" />
@@ -637,7 +637,7 @@ export default function ResumeReviewPage() {
                       <button
                         onClick={() => setActiveTab("overview")}
                         className={`px-4 py-2.5 text-xs font-semibold rounded-t-xl transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap
-                          ${activeTab === "overview" ? "text-teal-400 border-b-2 border-teal-400 bg-white/[0.04]" : "text-gray-400 hover:text-white"}`}
+                          ${activeTab === "overview" ? "text-violet-400 border-b-2 border-violet-400 bg-white/[0.04]" : "text-gray-400 hover:text-white"}`}
                       >
                         <ListFilter size={13} />
                         <span>Overview & Contact</span>
@@ -646,7 +646,7 @@ export default function ResumeReviewPage() {
                       <button
                         onClick={() => setActiveTab("bullets")}
                         className={`px-4 py-2.5 text-xs font-semibold rounded-t-xl transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap
-                          ${activeTab === "bullets" ? "text-teal-400 border-b-2 border-teal-400 bg-white/[0.04]" : "text-gray-400 hover:text-white"}`}
+                          ${activeTab === "bullets" ? "text-violet-400 border-b-2 border-violet-400 bg-white/[0.04]" : "text-gray-400 hover:text-white"}`}
                       >
                         <Sparkles size={13} />
                         <span>Bullet Point Improver ({result.bulletPointFixes?.length || 0})</span>
@@ -655,7 +655,7 @@ export default function ResumeReviewPage() {
                       <button
                         onClick={() => setActiveTab("keywords")}
                         className={`px-4 py-2.5 text-xs font-semibold rounded-t-xl transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap
-                          ${activeTab === "keywords" ? "text-teal-400 border-b-2 border-teal-400 bg-white/[0.04]" : "text-gray-400 hover:text-white"}`}
+                          ${activeTab === "keywords" ? "text-violet-400 border-b-2 border-violet-400 bg-white/[0.04]" : "text-gray-400 hover:text-white"}`}
                       >
                         <Target size={13} />
                         <span>Keyword Match ({result.keywords?.matchRate || 0}%)</span>
@@ -664,7 +664,7 @@ export default function ResumeReviewPage() {
                       <button
                         onClick={() => setActiveTab("sections")}
                         className={`px-4 py-2.5 text-xs font-semibold rounded-t-xl transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap
-                          ${activeTab === "sections" ? "text-teal-400 border-b-2 border-teal-400 bg-white/[0.04]" : "text-gray-400 hover:text-white"}`}
+                          ${activeTab === "sections" ? "text-violet-400 border-b-2 border-violet-400 bg-white/[0.04]" : "text-gray-400 hover:text-white"}`}
                       >
                         <Layers size={13} />
                         <span>Section Breakdown</span>
@@ -679,7 +679,7 @@ export default function ResumeReviewPage() {
                           <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-3">
                             <div className="flex items-center justify-between">
                               <h4 className="text-xs font-bold uppercase tracking-wider text-gray-300 flex items-center gap-2">
-                                <ShieldCheck size={14} className="text-teal-400" />
+                                <ShieldCheck size={14} className="text-violet-400" />
                                 <span>Contact Details & Link Verification</span>
                               </h4>
                               {result.contactAudit.feedback && (
@@ -758,11 +758,11 @@ export default function ResumeReviewPage() {
                         {result.pillars && (
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/5 space-y-1">
-                              <span className="text-[11px] font-bold text-teal-400 uppercase tracking-wider">ATS Parseability</span>
+                              <span className="text-[11px] font-bold text-violet-400 uppercase tracking-wider">ATS Parseability</span>
                               <p className="text-xs text-gray-300 leading-relaxed">{result.pillars.parseability?.feedback}</p>
                             </div>
                             <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/5 space-y-1">
-                              <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">
+                              <span className="text-[11px] font-bold text-indigo-400 uppercase tracking-wider">
                                 Quantifiable Impact ({result.pillars.quantifiableImpact?.metricsRatio || "Metrics ratio"})
                               </span>
                               <p className="text-xs text-gray-300 leading-relaxed">{result.pillars.quantifiableImpact?.feedback}</p>
@@ -772,13 +772,13 @@ export default function ResumeReviewPage() {
 
                         {/* ── POINT 4: AI SUMMARY & LINKEDIN HEADLINE GENERATOR ── */}
                         {result.aiProfiles && (
-                          <div className="p-5 rounded-2xl bg-linear-to-br from-[#0B1520] to-[#0B101A] border border-teal-500/20 space-y-4 shadow-xl">
+                          <div className="p-5 rounded-2xl bg-linear-to-br from-[#0e142e] to-[#0B101A] border border-violet-500/25 space-y-4 shadow-xl">
                             <div className="flex items-center justify-between border-b border-white/5 pb-2.5">
-                              <h4 className="text-xs font-bold uppercase tracking-wider text-teal-300 flex items-center gap-2">
-                                <Sparkles size={14} className="text-teal-400" />
+                              <h4 className="text-xs font-bold uppercase tracking-wider text-violet-300 flex items-center gap-2">
+                                <Sparkles size={14} className="text-violet-400" />
                                 <span>AI Generated Profile Summary & LinkedIn Headline</span>
                               </h4>
-                              <span className="text-[10px] text-teal-400 font-mono">1-Click Copy</span>
+                              <span className="text-[10px] text-violet-400 font-mono">1-Click Copy</span>
                             </div>
 
                             {/* LinkedIn Headline */}
@@ -791,7 +791,7 @@ export default function ResumeReviewPage() {
                                   </span>
                                   <button
                                     onClick={() => handleCopyText(result.aiProfiles.linkedInHeadline, "headline")}
-                                    className="flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-white/5 hover:bg-white/10 text-teal-300 text-[10px] font-semibold transition-all border border-white/10 cursor-pointer"
+                                    className="flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-white/5 hover:bg-white/10 text-violet-300 text-[10px] font-semibold transition-all border border-white/10 cursor-pointer"
                                   >
                                     {copiedId === "headline" ? (
                                       <>
@@ -817,12 +817,12 @@ export default function ResumeReviewPage() {
                               <div className="space-y-1.5 pt-1">
                                 <div className="flex items-center justify-between">
                                   <span className="text-[11px] font-semibold text-gray-300 flex items-center gap-1.5">
-                                    <Briefcase size={12} className="text-teal-400" />
+                                    <Briefcase size={12} className="text-violet-400" />
                                     <span>ATS Executive Resume Summary (About Me)</span>
                                   </span>
                                   <button
                                     onClick={() => handleCopyText(result.aiProfiles.executiveSummary, "summary")}
-                                    className="flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-white/5 hover:bg-white/10 text-teal-300 text-[10px] font-semibold transition-all border border-white/10 cursor-pointer"
+                                    className="flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-white/5 hover:bg-white/10 text-violet-300 text-[10px] font-semibold transition-all border border-white/10 cursor-pointer"
                                   >
                                     {copiedId === "summary" ? (
                                       <>
@@ -846,15 +846,15 @@ export default function ResumeReviewPage() {
                         )}
 
                         {/* ── POINT 2: CROSS-FEATURE BRIDGE CTA BANNER ── */}
-                        <div className="p-4 rounded-2xl bg-linear-to-r from-amber-950/40 via-black/40 to-orange-950/30 border border-amber-500/20 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+                        <div className="p-4 rounded-2xl bg-linear-to-r from-violet-950/40 via-black/40 to-indigo-950/30 border border-violet-500/30 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+                            <div className="w-10 h-10 rounded-xl bg-violet-500/20 border border-violet-500/30 flex items-center justify-center text-violet-400 shrink-0">
                               <Mic size={20} className="animate-pulse" />
                             </div>
                             <div>
                               <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
                                 <span>Ready for Technical & Behavioral Screenings?</span>
-                                <span className="px-2 py-0.2 rounded bg-amber-500/20 text-amber-300 text-[10px] font-mono">Mock Bot</span>
+                                <span className="px-2 py-0.2 rounded bg-violet-500/20 text-violet-300 text-[10px] font-mono">Mock Bot</span>
                               </h4>
                               <p className="text-xs text-gray-300 mt-0.5">
                                 Practice real-time interview questions tailored to <strong className="text-white">{result.fileName}</strong> and your target skills.
@@ -864,7 +864,7 @@ export default function ResumeReviewPage() {
 
                           <button
                             onClick={handlePracticeInterview}
-                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-linear-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white text-xs font-bold shadow-lg shadow-amber-500/25 transition-all cursor-pointer hover:scale-105 shrink-0"
+                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-linear-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-xs font-bold shadow-lg shadow-violet-500/25 transition-all cursor-pointer hover:scale-105 shrink-0"
                           >
                             <span>Start Mock Interview</span>
                             <ArrowRight size={13} />
@@ -877,7 +877,7 @@ export default function ResumeReviewPage() {
                     {/* ── TAB 2: BULLET POINT IMPROVER (GOOGLE XYZ FORMULA) ── */}
                     {activeTab === "bullets" && (
                       <div className="space-y-4 animate-in fade-in duration-200">
-                        <div className="p-3.5 rounded-xl bg-teal-500/10 border border-teal-500/20 text-xs text-teal-300 flex items-center justify-between">
+                        <div className="p-3.5 rounded-xl bg-violet-500/10 border border-violet-500/20 text-xs text-violet-300 flex items-center justify-between">
                           <span>
                             💡 <strong>Google XYZ Formula:</strong> <em>"Accomplished [X] as measured by [Y], by doing [Z]"</em>. Replace weak duty statements with quantified business outcomes.
                           </span>
@@ -888,7 +888,7 @@ export default function ResumeReviewPage() {
                             {result.bulletPointFixes.map((item, idx) => (
                               <div
                                 key={idx}
-                                className="p-4 rounded-2xl bg-black/40 border border-white/10 space-y-3 shadow-md hover:border-teal-500/30 transition-all"
+                                className="p-4 rounded-2xl bg-black/40 border border-[#1e2434] space-y-3 shadow-md hover:border-violet-500/30 transition-all"
                               >
                                 {/* Before / Original */}
                                 <div className="space-y-1">
@@ -911,7 +911,7 @@ export default function ResumeReviewPage() {
 
                                     <button
                                       onClick={() => handleCopyText(item.improved, `bullet-${idx}`)}
-                                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-teal-600/20 hover:bg-teal-600/30 text-teal-300 text-[11px] font-semibold transition-all cursor-pointer border border-teal-500/30"
+                                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-violet-600/20 hover:bg-violet-600/30 text-violet-300 text-[11px] font-semibold transition-all cursor-pointer border border-violet-500/30"
                                       title="Copy to clipboard"
                                     >
                                       {copiedId === `bullet-${idx}` ? (
@@ -953,10 +953,10 @@ export default function ResumeReviewPage() {
                     {activeTab === "keywords" && (
                       <div className="space-y-5 animate-in fade-in duration-200">
                         {/* Match Bar */}
-                        <div className="p-4 rounded-2xl bg-black/40 border border-white/10 space-y-2">
+                        <div className="p-4 rounded-2xl bg-black/40 border border-[#1e2434] space-y-2">
                           <div className="flex items-center justify-between text-xs font-semibold">
                             <span className="text-gray-300">Target Role Skill Coverage</span>
-                            <span className="text-teal-400 font-mono font-bold">
+                            <span className="text-violet-400 font-mono font-bold">
                               {result.keywords?.matchRate || 70}% Matched
                             </span>
                           </div>
@@ -965,7 +965,7 @@ export default function ResumeReviewPage() {
                               initial={{ width: 0 }}
                               animate={{ width: `${result.keywords?.matchRate || 70}%` }}
                               transition={{ duration: 1 }}
-                              className="h-full bg-linear-to-r from-teal-500 to-emerald-500 rounded-full"
+                              className="h-full bg-linear-to-r from-violet-500 to-indigo-500 rounded-full"
                             />
                           </div>
                         </div>
@@ -1025,7 +1025,7 @@ export default function ResumeReviewPage() {
                             {Object.entries(result.sections).map(([key, sec]) => (
                               <div
                                 key={key}
-                                className="p-4 rounded-2xl bg-black/40 border border-white/10 space-y-2.5 hover:border-teal-500/30 transition-all"
+                                className="p-4 rounded-2xl bg-black/40 border border-[#1e2434] space-y-2.5 hover:border-violet-500/30 transition-all"
                               >
                                 <div className="flex items-center justify-between">
                                   <span className="text-xs font-bold uppercase tracking-wider text-gray-200 capitalize">
@@ -1043,7 +1043,7 @@ export default function ResumeReviewPage() {
                                 </p>
 
                                 {sec.suggestion && (
-                                  <div className="p-2.5 rounded-xl bg-teal-500/5 border border-teal-500/10 text-[11px] text-teal-300 italic">
+                                  <div className="p-2.5 rounded-xl bg-violet-500/5 border border-violet-500/10 text-[11px] text-violet-300 italic">
                                     💡 <strong>Tip:</strong> {sec.suggestion}
                                   </div>
                                 )}
@@ -1076,7 +1076,7 @@ export default function ResumeReviewPage() {
           >
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <div className="flex items-center gap-2">
-                <History size={16} className="text-teal-400" />
+                <History size={16} className="text-violet-400" />
                 <h3 className="text-base font-bold text-white">Scan History</h3>
               </div>
               <button
@@ -1101,10 +1101,10 @@ export default function ResumeReviewPage() {
                   <div
                     key={item.id}
                     onClick={() => loadPastReview(item)}
-                    className="p-3.5 rounded-2xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 hover:border-teal-500/40 transition-all cursor-pointer flex items-center justify-between gap-3 group"
+                    className="p-3.5 rounded-2xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 hover:border-violet-500/40 transition-all cursor-pointer flex items-center justify-between gap-3 group"
                   >
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs font-bold text-gray-200 group-hover:text-teal-300 truncate">
+                      <p className="text-xs font-bold text-gray-200 group-hover:text-violet-300 truncate">
                         {item.file_name}
                       </p>
                       <p className="text-[10px] text-gray-500 font-mono mt-0.5">
@@ -1148,7 +1148,7 @@ export default function ResumeReviewPage() {
                   Promptix.ai
                 </span>
                 <span className="text-slate-400">•</span>
-                <span className="text-xs font-bold text-teal-800 uppercase tracking-widest">
+                <span className="text-xs font-bold text-violet-800 uppercase tracking-widest">
                   Enterprise ATS Audit Report
                 </span>
               </div>
@@ -1160,7 +1160,7 @@ export default function ResumeReviewPage() {
             <div className="text-right text-xs text-slate-600 font-mono space-y-0.5">
               <div><strong>Document:</strong> {result.fileName}</div>
               <div><strong>Date:</strong> {new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</div>
-              {role && <div className="text-[11px] text-teal-800 font-sans">Target Role Tailored</div>}
+              {role && <div className="text-[11px] text-violet-800 font-sans">Target Role Tailored</div>}
             </div>
           </div>
 
@@ -1169,12 +1169,12 @@ export default function ResumeReviewPage() {
             <div className="flex items-center gap-5">
               <div className="w-16 h-16 rounded-xl bg-slate-900 text-white flex flex-col items-center justify-center shrink-0">
                 <span className="text-2xl font-black font-mono leading-none">{result.atsScore}</span>
-                <span className="text-[8px] uppercase font-bold tracking-widest text-teal-400 mt-1">/ 100 ATS</span>
+                <span className="text-[8px] uppercase font-bold tracking-widest text-violet-400 mt-1">/ 100 ATS</span>
               </div>
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-xs font-bold uppercase tracking-wider text-slate-700">Competitiveness Grade:</span>
-                  <span className="px-2 py-0.5 rounded bg-teal-100 text-teal-900 font-bold text-xs font-mono">
+                  <span className="px-2 py-0.5 rounded bg-violet-100 text-violet-900 font-bold text-xs font-mono">
                     Grade {result.grade || "B+"}
                   </span>
                 </div>
@@ -1358,11 +1358,11 @@ export default function ResumeReviewPage() {
                   <div key={key} className="p-2 rounded border border-slate-200 bg-slate-50 space-y-0.5">
                     <div className="flex items-center justify-between font-bold capitalize text-slate-900">
                       <span>{key}</span>
-                      <span className="font-mono text-teal-800">{sec.score}/10</span>
+                      <span className="font-mono text-violet-800">{sec.score}/10</span>
                     </div>
                     <p className="text-[11px] text-slate-700 leading-tight">{sec.feedback}</p>
                     {sec.suggestion && (
-                      <p className="text-[10px] text-teal-800 italic">💡 {sec.suggestion}</p>
+                      <p className="text-[10px] text-violet-800 italic">💡 {sec.suggestion}</p>
                     )}
                   </div>
                 ))}
