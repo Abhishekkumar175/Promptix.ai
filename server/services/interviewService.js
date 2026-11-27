@@ -329,6 +329,12 @@ Respond ONLY with strictly valid JSON matching this schema:
         problemSolving: { score: 70, feedback: "Proposed working approaches; could proactively evaluate performance bottlenecks." },
         cultureFit: { score: 78, feedback: "Collaborative mindset and openness to technical feedback." },
       },
+      speechDelivery: {
+        pacing: "Optimal (130-150 WPM)",
+        fillerWordImpact: "Minimal",
+        starMethodScore: 75,
+        deliveryTip: "Anchor behavioral answers with concrete engineering metrics and business impact.",
+      },
       strengths: [
         "Clear communication and structured presentation of technical ideas.",
         "Demonstrated familiarity with modern development stacks and design principles.",
