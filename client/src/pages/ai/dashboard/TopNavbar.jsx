@@ -9,7 +9,7 @@ export default function TopNavbar() {
   if (location.pathname.includes("chat")) pageTitle = "AI Chat Assistant";
   else if (location.pathname.includes("pdf")) pageTitle = "Chat with PDF";
   else if (location.pathname.includes("review")) pageTitle = "Resume Reviewer";
-  else if (location.pathname.includes("interview")) pageTitle = "Mock Interview Bot";
+  else if (location.pathname.includes("interview")) pageTitle = "Mock Interview";
   else if (location.pathname.includes("community")) pageTitle = "Promptix Community";
 
   return (

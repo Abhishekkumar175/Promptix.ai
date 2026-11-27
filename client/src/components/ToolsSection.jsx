@@ -85,7 +85,7 @@ export default function ToolsSection() {
                 <div className="w-9 h-9 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-4">
                   <Mic size={16} className="text-amber-400" />
                 </div>
-                <h3 className="text-lg font-bold text-white mb-2">Mock Interview Bot</h3>
+                <h3 className="text-lg font-bold text-white mb-2">Mock Interview</h3>
                 <p className="text-sm text-gray-400 leading-relaxed flex-1">
                   Simulate high-pressure technical and behavioral interviews with real-time AI feedback and performance analytics.
                 </p>

@@ -593,7 +593,7 @@ export default function MockInterview() {
               </span>
             </div>
             <h1 className="text-xl md:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-              Mock Interview Bot
+              Mock Interview
             </h1>
           </div>
 

@@ -20,7 +20,7 @@ const menu = [
   { name: "Chat", icon: MessageCircle, path: "/ai/chat" },
   { name: "Chat with PDF", icon: FileText, path: "/ai/pdf" },
   { name: "Review Resume", icon: FileText, path: "/ai/review" },
-  { name: "Mock Interview Bot", icon: Mic, path: "/ai/interview" },
+  { name: "Mock Interview", icon: Mic, path: "/ai/interview" },
   { name: "Community", icon: Users, path: "/ai/community" },
 ];
 
