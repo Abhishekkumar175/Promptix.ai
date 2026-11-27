@@ -241,6 +241,8 @@ export default function MockInterview() {
     }
 
     try {
+      // Capture any existing typed text as base so we append cleanly without duplicating
+      speechBaseTextRef.current = inputVal.trim() ? inputVal.trim() + " " : "";
       const recognition = new SpeechRecognition();
       speechRecognitionRef.current = recognition;
       recognition.continuous = true;
@@ -251,54 +253,53 @@ export default function MockInterview() {
       recognition.onend = () => {
         setIsListening(false);
         cancelAutoSend();
+        speechBaseTextRef.current = "";
       };
       recognition.onerror = (e) => {
         console.warn("Speech recognition error:", e);
         setIsListening(false);
         cancelAutoSend();
+        speechBaseTextRef.current = "";
       };
 
       recognition.onresult = (event) => {
-        let currentTranscript = "";
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          currentTranscript += event.results[i][0].transcript;
+        let transcript = "";
+        for (let i = 0; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
         }
 
-        if (currentTranscript.trim()) {
-          setInputVal((prev) => {
-            const trimmedPrev = prev.trim();
-            const combined = trimmedPrev
-              ? `${trimmedPrev} ${currentTranscript.trim()}`
-              : currentTranscript.trim();
+        const base = speechBaseTextRef.current;
+        const combined = base ? `${base}${transcript}`.trim() : transcript.trim();
 
-            // ── HANDS-FREE VAD: TRIGGER 2-SECOND SILENCE AUTO-SEND ──
-            if (
-              handsFreeMode &&
-              combined.length >= 10 &&
-              sessionState === "active" &&
-              !isAiTyping
-            ) {
-              cancelAutoSend();
-              setVadCountdown(2);
-              let remaining = 2;
-              vadIntervalRef.current = setInterval(() => {
-                remaining -= 1;
-                if (remaining <= 0) {
-                  clearInterval(vadIntervalRef.current);
-                } else {
-                  setVadCountdown(remaining);
-                }
-              }, 1000);
+        if (combined) {
+          setInputVal(combined);
 
-              vadTimerRef.current = setTimeout(() => {
-                setVadCountdown(null);
+          // ── HANDS-FREE VAD: TRIGGER 2-SECOND SILENCE AUTO-SEND ──
+          if (
+            handsFreeMode &&
+            combined.length >= 8 &&
+            sessionState === "active" &&
+            !isAiTyping
+          ) {
+            cancelAutoSend();
+            setVadCountdown(2);
+            let remaining = 2;
+            vadIntervalRef.current = setInterval(() => {
+              remaining -= 1;
+              if (remaining <= 0) {
                 clearInterval(vadIntervalRef.current);
-                handleSendMessage(combined);
-              }, 2000);
-            }
+              } else {
+                setVadCountdown(remaining);
+              }
+            }, 1000);
 
-            return combined;
-          });
+            vadTimerRef.current = setTimeout(() => {
+              setVadCountdown(null);
+              clearInterval(vadIntervalRef.current);
+              speechBaseTextRef.current = "";
+              handleSendMessage(combined);
+            }, 2000);
+          }
         }
       };
 
@@ -361,6 +362,7 @@ export default function MockInterview() {
   // 2. SEND CANDIDATE'S ANSWER & RECEIVE ADAPTIVE QUESTION + FEEDBACK
   const handleSendMessage = async (textOverride = null) => {
     cancelAutoSend();
+    speechBaseTextRef.current = "";
     const candidateAnswer = (
       typeof textOverride === "string" ? textOverride : inputVal
     ).trim();
