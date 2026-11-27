@@ -49,7 +49,11 @@ const containerVariants = {
 
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { type: "spring", stiffness: 300, damping: 24 },
+  },
 };
 
 const INTERVIEW_TYPES = [
@@ -61,9 +65,19 @@ const INTERVIEW_TYPES = [
 const DIFFICULTIES = ["Junior", "Mid-Level", "Senior", "Executive"];
 
 export const PHASES = [
-  { id: 1, name: "Background & Alignment", short: "1. Intro", icon: ShieldCheck },
+  {
+    id: 1,
+    name: "Background & Alignment",
+    short: "1. Intro",
+    icon: ShieldCheck,
+  },
   { id: 2, name: "Core Technical Drill", short: "2. Core Drill", icon: Code },
-  { id: 3, name: "Pressure & Edge Cases", short: "3. Pressure Test", icon: Zap },
+  {
+    id: 3,
+    name: "Pressure & Edge Cases",
+    short: "3. Pressure Test",
+    icon: Zap,
+  },
   { id: 4, name: "Reverse Q&A & Wrap-Up", short: "4. Wrap-Up", icon: Sparkles },
 ];
 
@@ -77,7 +91,9 @@ export default function MockInterview() {
   // Session configuration state
   const [role, setRole] = useState(location.state?.role || "");
   const [type, setType] = useState("tech");
-  const [difficulty, setDifficulty] = useState(location.state?.difficulty || "Mid-Level");
+  const [difficulty, setDifficulty] = useState(
+    location.state?.difficulty || "Mid-Level",
+  );
 
   // Active Session state
   const [currentSession, setCurrentSession] = useState(null);
@@ -107,6 +123,7 @@ export default function MockInterview() {
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
   const speechRecognitionRef = useRef(null);
+  const speechBaseTextRef = useRef("");
 
   // Scorecard / Final Report modal state
   const [scorecard, setScorecard] = useState(null);
@@ -207,9 +224,12 @@ export default function MockInterview() {
 
   // Speech-To-Text (Microphone voice input with Hands-Free VAD)
   const toggleSpeechRecognition = () => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert("Speech recognition is not supported in this browser. Please use Google Chrome or Microsoft Edge.");
+      alert(
+        "Speech recognition is not supported in this browser. Please use Google Chrome or Microsoft Edge.",
+      );
       return;
     }
 
@@ -247,10 +267,17 @@ export default function MockInterview() {
         if (currentTranscript.trim()) {
           setInputVal((prev) => {
             const trimmedPrev = prev.trim();
-            const combined = trimmedPrev ? `${trimmedPrev} ${currentTranscript.trim()}` : currentTranscript.trim();
-            
+            const combined = trimmedPrev
+              ? `${trimmedPrev} ${currentTranscript.trim()}`
+              : currentTranscript.trim();
+
             // ── HANDS-FREE VAD: TRIGGER 2-SECOND SILENCE AUTO-SEND ──
-            if (handsFreeMode && combined.length >= 10 && sessionState === "active" && !isAiTyping) {
+            if (
+              handsFreeMode &&
+              combined.length >= 10 &&
+              sessionState === "active" &&
+              !isAiTyping
+            ) {
               cancelAutoSend();
               setVadCountdown(2);
               let remaining = 2;
@@ -308,7 +335,8 @@ export default function MockInterview() {
         if (res.currentPhase) setCurrentPhase(res.currentPhase);
         if (res.phaseLabel) setPhaseLabel(res.phaseLabel);
         if (res.questionNumber) setQuestionNumber(res.questionNumber);
-        if (res.totalExpectedQuestions) setTotalExpectedQuestions(res.totalExpectedQuestions);
+        if (res.totalExpectedQuestions)
+          setTotalExpectedQuestions(res.totalExpectedQuestions);
 
         const initialMsg = {
           role: "ai",
@@ -333,8 +361,16 @@ export default function MockInterview() {
   // 2. SEND CANDIDATE'S ANSWER & RECEIVE ADAPTIVE QUESTION + FEEDBACK
   const handleSendMessage = async (textOverride = null) => {
     cancelAutoSend();
-    const candidateAnswer = (typeof textOverride === "string" ? textOverride : inputVal).trim();
-    if (!candidateAnswer || sessionState !== "active" || isAiTyping || !currentSession) return;
+    const candidateAnswer = (
+      typeof textOverride === "string" ? textOverride : inputVal
+    ).trim();
+    if (
+      !candidateAnswer ||
+      sessionState !== "active" ||
+      isAiTyping ||
+      !currentSession
+    )
+      return;
 
     // Stop microphone if currently listening
     if (isListening) {
@@ -351,16 +387,20 @@ export default function MockInterview() {
     setIsAiTyping(true);
 
     try {
-      const res = await api.post(`/api/interview/${currentSession.id}/message`, {
-        message: candidateAnswer,
-        elapsedTime,
-      });
+      const res = await api.post(
+        `/api/interview/${currentSession.id}/message`,
+        {
+          message: candidateAnswer,
+          elapsedTime,
+        },
+      );
 
       if (res.success) {
         if (res.currentPhase) setCurrentPhase(res.currentPhase);
         if (res.phaseLabel) setPhaseLabel(res.phaseLabel);
         if (res.questionNumber) setQuestionNumber(res.questionNumber);
-        if (res.totalExpectedQuestions) setTotalExpectedQuestions(res.totalExpectedQuestions);
+        if (res.totalExpectedQuestions)
+          setTotalExpectedQuestions(res.totalExpectedQuestions);
 
         // Update user message with micro-feedback
         setMessages((prev) => {
@@ -488,7 +528,9 @@ export default function MockInterview() {
                 <Sparkles size={11} /> AI Recruiter Simulation
               </span>
               <span className="text-gray-500 text-xs">•</span>
-              <span className="text-xs text-gray-400 font-mono">Adaptive Turn-by-Turn Audio & Text</span>
+              <span className="text-xs text-gray-400 font-mono">
+                Adaptive Turn-by-Turn Audio & Text
+              </span>
             </div>
             <h1 className="text-xl md:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
               Mock Interview Bot
@@ -505,10 +547,20 @@ export default function MockInterview() {
               }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer shadow-sm
                 ${voiceEnabled ? "bg-violet-500/15 border-violet-500/30 text-violet-300" : "bg-white/5 border-white/10 text-gray-400"}`}
-              title={voiceEnabled ? "AI voice enabled (Click to mute)" : "AI voice muted (Click to unmute)"}
+              title={
+                voiceEnabled
+                  ? "AI voice enabled (Click to mute)"
+                  : "AI voice muted (Click to unmute)"
+              }
             >
-              {voiceEnabled ? <Volume2 size={14} className="text-violet-400" /> : <VolumeX size={14} />}
-              <span className="hidden sm:inline">{voiceEnabled ? "Voice On" : "Voice Off"}</span>
+              {voiceEnabled ? (
+                <Volume2 size={14} className="text-violet-400" />
+              ) : (
+                <VolumeX size={14} />
+              )}
+              <span className="hidden sm:inline">
+                {voiceEnabled ? "Voice On" : "Voice Off"}
+              </span>
             </button>
 
             {/* Past Sessions History */}
@@ -540,7 +592,10 @@ export default function MockInterview() {
           {/* ========================================================
               LEFT COLUMN: SETUP CONFIG & TELEMETRY
               ======================================================== */}
-          <motion.div variants={itemVariants} className="lg:col-span-4 h-full flex flex-col no-scrollbar overflow-y-auto pb-4">
+          <motion.div
+            variants={itemVariants}
+            className="lg:col-span-4 h-full flex flex-col no-scrollbar overflow-y-auto pb-4"
+          >
             <div
               className={`bg-[#0B101A]/90 backdrop-blur-xl border border-[#1e2434] rounded-3xl p-5 flex flex-col shrink-0 shadow-2xl relative overflow-hidden transition-all duration-500
               ${sessionState === "active" ? "opacity-90 border-violet-500/30" : "group"}`}
@@ -552,7 +607,9 @@ export default function MockInterview() {
                   <Mic className="text-violet-400 w-4 h-4" />
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-white tracking-tight">Interview Setup</h2>
+                  <h2 className="text-base font-bold text-white tracking-tight">
+                    Interview Setup
+                  </h2>
                   <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">
                     Fortune 500 Recruiter Simulator
                   </p>
@@ -565,24 +622,32 @@ export default function MockInterview() {
                   <div className="p-3.5 rounded-2xl bg-violet-500/10 border border-violet-500/25 space-y-1.5 shadow-md animate-in fade-in duration-300">
                     <div className="flex items-center justify-between">
                       <span className="flex items-center gap-1.5 text-xs font-bold text-violet-300 uppercase tracking-wider">
-                        <Sparkles size={13} className="text-violet-400" /> Resume Linked
+                        <Sparkles size={13} className="text-violet-400" />{" "}
+                        Resume Linked
                       </span>
                       <span className="px-2 py-0.2 rounded-md bg-violet-500/20 text-violet-300 text-[10px] font-bold font-mono border border-violet-500/30">
                         ATS {resumeContext.atsScore}/100
                       </span>
                     </div>
                     <p className="text-[11px] text-gray-300 leading-tight">
-                      Interview customized to <strong className="text-white">{resumeContext.resumeName}</strong>
+                      Interview customized to{" "}
+                      <strong className="text-white">
+                        {resumeContext.resumeName}
+                      </strong>
                     </p>
-                    {resumeContext.keySkills && resumeContext.keySkills.length > 0 && (
-                      <div className="flex flex-wrap gap-1 pt-0.5">
-                        {resumeContext.keySkills.map((sk, i) => (
-                          <span key={i} className="px-1.5 py-0.2 rounded bg-white/5 border border-white/5 text-[9px] text-violet-200">
-                            {sk}
-                          </span>
-                        ))}
-                      </div>
-                    )}
+                    {resumeContext.keySkills &&
+                      resumeContext.keySkills.length > 0 && (
+                        <div className="flex flex-wrap gap-1 pt-0.5">
+                          {resumeContext.keySkills.map((sk, i) => (
+                            <span
+                              key={i}
+                              className="px-1.5 py-0.2 rounded bg-white/5 border border-white/5 text-[9px] text-violet-200"
+                            >
+                              {sk}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                   </div>
                 )}
 
@@ -592,7 +657,10 @@ export default function MockInterview() {
                     <span>Target Job Role *</span>
                   </label>
                   <div className="relative">
-                    <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
+                    <Briefcase
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
+                      size={14}
+                    />
                     <input
                       type="text"
                       disabled={sessionState === "active"}
@@ -606,7 +674,9 @@ export default function MockInterview() {
 
                 {/* Interview Type Selection */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-gray-300">Round Type</label>
+                  <label className="text-xs font-semibold text-gray-300">
+                    Round Type
+                  </label>
                   <div className="grid grid-cols-3 gap-2">
                     {INTERVIEW_TYPES.map((t) => {
                       const IconComponent = t.icon;
@@ -624,8 +694,13 @@ export default function MockInterview() {
                                 : "bg-black/30 border-white/5 text-gray-400 hover:text-white hover:bg-white/5"
                             }`}
                         >
-                          <IconComponent size={16} className={`mb-1 ${isSelected ? "text-violet-400" : "text-gray-500"}`} />
-                          <span className="text-[11px] font-semibold">{t.label}</span>
+                          <IconComponent
+                            size={16}
+                            className={`mb-1 ${isSelected ? "text-violet-400" : "text-gray-500"}`}
+                          />
+                          <span className="text-[11px] font-semibold">
+                            {t.label}
+                          </span>
                         </button>
                       );
                     })}
@@ -634,7 +709,9 @@ export default function MockInterview() {
 
                 {/* Difficulty Seniority */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-gray-300">Target Seniority Level</label>
+                  <label className="text-xs font-semibold text-gray-300">
+                    Target Seniority Level
+                  </label>
                   <div className="grid grid-cols-2 gap-2">
                     {DIFFICULTIES.map((d) => (
                       <button
@@ -681,12 +758,18 @@ export default function MockInterview() {
                   >
                     {sessionState === "starting" ? (
                       <>
-                        <Loader2 size={15} className="animate-spin text-white" />
+                        <Loader2
+                          size={15}
+                          className="animate-spin text-white"
+                        />
                         <span>Connecting to AI Interviewer...</span>
                       </>
                     ) : sessionState === "finishing" ? (
                       <>
-                        <Loader2 size={15} className="animate-spin text-white" />
+                        <Loader2
+                          size={15}
+                          className="animate-spin text-white"
+                        />
                         <span>Compiling Diagnostic Scorecard...</span>
                       </>
                     ) : (
@@ -704,7 +787,10 @@ export default function MockInterview() {
           {/* ========================================================
               RIGHT COLUMN: LIVE INTERVIEW INTERFACE & TELEMETRY
               ======================================================== */}
-          <motion.div variants={itemVariants} className="lg:col-span-8 h-full flex flex-col relative pb-4">
+          <motion.div
+            variants={itemVariants}
+            className="lg:col-span-8 h-full flex flex-col relative pb-4"
+          >
             <div className="bg-[#0B101A]/90 backdrop-blur-xl border border-[#1e2434] rounded-3xl flex flex-col h-full shadow-2xl relative overflow-hidden">
               {/* Telemetry Header */}
               <div className="h-13 border-b border-[#1e2434] flex items-center justify-between px-5 bg-black/40 shrink-0 relative z-20">
@@ -712,11 +798,15 @@ export default function MockInterview() {
                   <div className="flex items-center gap-1.5">
                     <div
                       className={`w-2.5 h-2.5 rounded-full ${
-                        sessionState === "active" ? "bg-emerald-500 animate-pulse" : "bg-gray-600"
+                        sessionState === "active"
+                          ? "bg-emerald-500 animate-pulse"
+                          : "bg-gray-600"
                       }`}
                     />
                     <span className="text-xs font-bold text-gray-300">
-                      {sessionState === "active" ? "Session Active" : "Interviewer Ready"}
+                      {sessionState === "active"
+                        ? "Session Active"
+                        : "Interviewer Ready"}
                     </span>
                   </div>
 
@@ -762,22 +852,36 @@ export default function MockInterview() {
                       const isCompleted = currentPhase > p.id;
                       const PhaseIcon = p.icon;
                       return (
-                        <div key={p.id} className="flex items-center gap-1 sm:gap-2">
+                        <div
+                          key={p.id}
+                          className="flex items-center gap-1 sm:gap-2"
+                        >
                           <div
                             className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all
                             ${
                               isCurrent
                                 ? "bg-violet-500/20 text-violet-300 border border-violet-500/40 shadow-sm shadow-violet-500/20"
                                 : isCompleted
-                                ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                                : "bg-white/[0.02] text-gray-500 border border-white/5"
+                                  ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                                  : "bg-white/[0.02] text-gray-500 border border-white/5"
                             }`}
                           >
-                            <PhaseIcon size={12} className={isCurrent ? "text-violet-400" : isCompleted ? "text-emerald-400" : "text-gray-500"} />
+                            <PhaseIcon
+                              size={12}
+                              className={
+                                isCurrent
+                                  ? "text-violet-400"
+                                  : isCompleted
+                                    ? "text-emerald-400"
+                                    : "text-gray-500"
+                              }
+                            />
                             <span className="hidden md:inline">{p.name}</span>
                             <span className="md:hidden">{p.short}</span>
                           </div>
-                          {p.id < 4 && <span className="text-gray-600 text-xs">➔</span>}
+                          {p.id < 4 && (
+                            <span className="text-gray-600 text-xs">➔</span>
+                          )}
                         </div>
                       );
                     })}
@@ -787,7 +891,9 @@ export default function MockInterview() {
                   <div className="flex items-center gap-2">
                     <span className="text-[11px] font-mono px-2.5 py-1 rounded-lg bg-white/5 border border-white/5 text-violet-300 flex items-center gap-1.5">
                       <Sparkles size={11} className="text-violet-400" />
-                      <span>Question {questionNumber} / {totalExpectedQuestions}</span>
+                      <span>
+                        Question {questionNumber} / {totalExpectedQuestions}
+                      </span>
                     </span>
                   </div>
                 </div>
@@ -801,20 +907,33 @@ export default function MockInterview() {
                     <div className="w-16 h-16 rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center mb-4 text-violet-400 shadow-[0_0_40px_rgba(139,92,246,0.15)]">
                       <Eye size={28} />
                     </div>
-                    <h3 className="text-lg font-bold text-white mb-2">Simulated Recruiter Chamber</h3>
+                    <h3 className="text-lg font-bold text-white mb-2">
+                      Simulated Recruiter Chamber
+                    </h3>
                     <p className="text-xs text-gray-400 leading-relaxed mb-6">
-                      Configure your target role and interview type on the left. Once initialized, the AI recruiter will ask
-                      adaptive technical, behavioral, or architectural questions and evaluate your answers turn-by-turn.
+                      Configure your target role and interview type on the left.
+                      Once initialized, the AI recruiter will ask adaptive
+                      technical, behavioral, or architectural questions and
+                      evaluate your answers turn-by-turn.
                     </p>
 
                     <div className="grid grid-cols-2 gap-3 w-full text-left">
                       <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5">
-                        <span className="text-violet-400 text-xs font-bold block mb-1">🎤 Voice & Mic Input</span>
-                        <p className="text-[11px] text-gray-400">Speak naturally using speech-to-text or type answers.</p>
+                        <span className="text-violet-400 text-xs font-bold block mb-1">
+                          🎤 Voice & Mic Input
+                        </span>
+                        <p className="text-[11px] text-gray-400">
+                          Speak naturally using speech-to-text or type answers.
+                        </p>
                       </div>
                       <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5">
-                        <span className="text-violet-400 text-xs font-bold block mb-1">📊 Turn Micro-Feedback</span>
-                        <p className="text-[11px] text-gray-400">Receive instant advice on what you answered well vs missed.</p>
+                        <span className="text-violet-400 text-xs font-bold block mb-1">
+                          📊 Turn Micro-Feedback
+                        </span>
+                        <p className="text-[11px] text-gray-400">
+                          Receive instant advice on what you answered well vs
+                          missed.
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -828,10 +947,15 @@ export default function MockInterview() {
                       <div className="absolute inset-0 border-[3px] border-violet-500/20 border-dashed rounded-full animate-[spin_4s_linear_infinite]" />
                       <div className="absolute inset-2 border-[2px] border-violet-400 border-t-transparent rounded-full animate-[spin_1.5s_linear_infinite_reverse]" />
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <Volume2 className="text-violet-300 animate-pulse" size={26} />
+                        <Volume2
+                          className="text-violet-300 animate-pulse"
+                          size={26}
+                        />
                       </div>
                     </div>
-                    <h4 className="text-base font-bold text-white mb-1">Connecting to Senior Interviewer</h4>
+                    <h4 className="text-base font-bold text-white mb-1">
+                      Connecting to Senior Interviewer
+                    </h4>
                     <p className="text-xs text-gray-400 font-mono">
                       Generating tailored opening question for {role}...
                     </p>
@@ -846,7 +970,9 @@ export default function MockInterview() {
                       <div className="absolute top-0 inset-x-0 h-6 bg-black/60 flex items-center px-2.5 z-10 justify-between">
                         <div className="flex items-center gap-1.5">
                           <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                          <span className="text-[9px] font-bold uppercase text-gray-300">AI_Recruiter</span>
+                          <span className="text-[9px] font-bold uppercase text-gray-300">
+                            AI_Recruiter
+                          </span>
                         </div>
                         <span className="text-[9px] text-violet-400 font-mono font-bold">
                           {isAiSpeaking ? "Audio ON" : "Listening"}
@@ -858,7 +984,9 @@ export default function MockInterview() {
                         <div className="relative w-16 h-16 flex items-center justify-center">
                           <div
                             className={`absolute inset-0 bg-violet-500 rounded-full blur-xl transition-opacity ${
-                              isAiSpeaking ? "opacity-40 animate-pulse" : "opacity-15"
+                              isAiSpeaking
+                                ? "opacity-40 animate-pulse"
+                                : "opacity-15"
                             }`}
                           />
                           <div className="w-full h-full rounded-full border border-violet-500/30 flex items-center justify-center bg-black/40">
@@ -878,7 +1006,10 @@ export default function MockInterview() {
                                 ))}
                               </div>
                             ) : (
-                              <Volume2 size={22} className="text-violet-400/80" />
+                              <Volume2
+                                size={22}
+                                className="text-violet-400/80"
+                              />
                             )}
                           </div>
                         </div>
@@ -888,7 +1019,10 @@ export default function MockInterview() {
                     {/* Chat Messages Scrolling Pane */}
                     <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-5 no-scrollbar pb-24">
                       {messages.map((m, i) => (
-                        <div key={i} className={`flex flex-col ${m.role === "user" ? "items-end" : "items-start w-[88%] md:w-[75%]"}`}>
+                        <div
+                          key={i}
+                          className={`flex flex-col ${m.role === "user" ? "items-end" : "items-start w-[88%] md:w-[75%]"}`}
+                        >
                           {/* Message Bubble */}
                           <div
                             className={`relative rounded-2xl p-4 text-xs md:text-sm leading-relaxed shadow-lg
@@ -913,14 +1047,23 @@ export default function MockInterview() {
                                 onClick={() => toggleFeedback(i)}
                                 className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[11px] font-semibold text-violet-300 transition-all cursor-pointer ml-auto"
                               >
-                                <Sparkles size={11} className="text-violet-400" />
-                                <span>Turn Evaluation: {m.microFeedback.score}/10</span>
+                                <Sparkles
+                                  size={11}
+                                  className="text-violet-400"
+                                />
+                                <span>
+                                  Turn Evaluation: {m.microFeedback.score}/10
+                                </span>
                                 {m.microFeedback.clarityScore && (
                                   <span className="text-[10px] text-gray-400 font-mono ml-1">
                                     • Clarity {m.microFeedback.clarityScore}%
                                   </span>
                                 )}
-                                {expandedFeedback[i] ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                                {expandedFeedback[i] ? (
+                                  <ChevronUp size={12} />
+                                ) : (
+                                  <ChevronDown size={12} />
+                                )}
                               </button>
 
                               {expandedFeedback[i] && (
@@ -931,13 +1074,17 @@ export default function MockInterview() {
                                 >
                                   {m.microFeedback.positive && (
                                     <div className="text-emerald-300 flex items-start gap-1.5">
-                                      <span className="text-emerald-400 font-bold">✓</span>
+                                      <span className="text-emerald-400 font-bold">
+                                        ✓
+                                      </span>
                                       <span>{m.microFeedback.positive}</span>
                                     </div>
                                   )}
                                   {m.microFeedback.missing && (
                                     <div className="text-violet-300 flex items-start gap-1.5">
-                                      <span className="text-violet-400 font-bold">!</span>
+                                      <span className="text-violet-400 font-bold">
+                                        !
+                                      </span>
                                       <span>{m.microFeedback.missing}</span>
                                     </div>
                                   )}
@@ -948,14 +1095,22 @@ export default function MockInterview() {
                                   )}
 
                                   {/* Speech & Filler Telemetry */}
-                                  {m.microFeedback.fillerAnalysis && m.microFeedback.fillerAnalysis.count > 0 && (
-                                    <div className="pt-1.5 border-t border-white/5 flex items-center gap-2 text-[10px] text-amber-300/90 font-mono">
-                                      <span>🗣️ {m.microFeedback.fillerAnalysis.count} filler word(s) detected:</span>
-                                      <span className="px-1.5 py-0.2 rounded bg-amber-500/10 border border-amber-500/20 text-amber-300">
-                                        {m.microFeedback.fillerAnalysis.detected.join(", ")}
-                                      </span>
-                                    </div>
-                                  )}
+                                  {m.microFeedback.fillerAnalysis &&
+                                    m.microFeedback.fillerAnalysis.count >
+                                      0 && (
+                                      <div className="pt-1.5 border-t border-white/5 flex items-center gap-2 text-[10px] text-amber-300/90 font-mono">
+                                        <span>
+                                          🗣️{" "}
+                                          {m.microFeedback.fillerAnalysis.count}{" "}
+                                          filler word(s) detected:
+                                        </span>
+                                        <span className="px-1.5 py-0.2 rounded bg-amber-500/10 border border-amber-500/20 text-amber-300">
+                                          {m.microFeedback.fillerAnalysis.detected.join(
+                                            ", ",
+                                          )}
+                                        </span>
+                                      </div>
+                                    )}
                                 </motion.div>
                               )}
                             </div>
@@ -968,18 +1123,39 @@ export default function MockInterview() {
                         <div className="flex justify-start pt-1">
                           <div className="bg-[#0f1424] border border-[#1e2434] rounded-2xl p-3.5 rounded-tl-none flex items-center gap-1.5 w-16 shadow-lg">
                             <motion.div
-                              animate={{ scale: [1, 1.3, 1], opacity: [0.4, 1, 0.4] }}
-                              transition={{ repeat: Infinity, duration: 0.8, delay: 0 }}
+                              animate={{
+                                scale: [1, 1.3, 1],
+                                opacity: [0.4, 1, 0.4],
+                              }}
+                              transition={{
+                                repeat: Infinity,
+                                duration: 0.8,
+                                delay: 0,
+                              }}
                               className="w-1.5 h-1.5 rounded-full bg-violet-400"
                             />
                             <motion.div
-                              animate={{ scale: [1, 1.3, 1], opacity: [0.4, 1, 0.4] }}
-                              transition={{ repeat: Infinity, duration: 0.8, delay: 0.2 }}
+                              animate={{
+                                scale: [1, 1.3, 1],
+                                opacity: [0.4, 1, 0.4],
+                              }}
+                              transition={{
+                                repeat: Infinity,
+                                duration: 0.8,
+                                delay: 0.2,
+                              }}
                               className="w-1.5 h-1.5 rounded-full bg-violet-400"
                             />
                             <motion.div
-                              animate={{ scale: [1, 1.3, 1], opacity: [0.4, 1, 0.4] }}
-                              transition={{ repeat: Infinity, duration: 0.8, delay: 0.4 }}
+                              animate={{
+                                scale: [1, 1.3, 1],
+                                opacity: [0.4, 1, 0.4],
+                              }}
+                              transition={{
+                                repeat: Infinity,
+                                duration: 0.8,
+                                delay: 0.4,
+                              }}
                               className="w-1.5 h-1.5 rounded-full bg-violet-400"
                             />
                           </div>
@@ -994,10 +1170,16 @@ export default function MockInterview() {
                       {vadCountdown !== null && (
                         <div className="mb-2 px-3.5 py-1.5 rounded-xl bg-violet-600/20 border border-violet-500/40 flex items-center justify-between text-xs text-violet-200 shadow-lg shadow-violet-500/10 animate-in fade-in slide-in-from-bottom-1 duration-200">
                           <div className="flex items-center gap-2">
-                            <Radio size={14} className="text-violet-400 animate-pulse" />
+                            <Radio
+                              size={14}
+                              className="text-violet-400 animate-pulse"
+                            />
                             <span>
                               Silence detected. Hands-free auto-sending in{" "}
-                              <strong className="text-white font-mono text-sm underline">{vadCountdown}s</strong>...
+                              <strong className="text-white font-mono text-sm underline">
+                                {vadCountdown}s
+                              </strong>
+                              ...
                             </span>
                           </div>
                           <button
@@ -1019,7 +1201,9 @@ export default function MockInterview() {
                               <span>Listening... speak naturally.</span>
                             </div>
                           ) : (
-                            <span className="text-gray-500 text-[10px]">Ready for your response</span>
+                            <span className="text-gray-500 text-[10px]">
+                              Ready for your response
+                            </span>
                           )}
 
                           <button
@@ -1035,10 +1219,23 @@ export default function MockInterview() {
                                   ? "bg-violet-500/15 border-violet-500/30 text-violet-300"
                                   : "bg-white/5 border-white/5 text-gray-500 hover:text-gray-400"
                               }`}
-                            title={handsFreeMode ? "Hands-Free Auto-Send is ON (Sends when you stop speaking)" : "Hands-Free Auto-Send is OFF"}
+                            title={
+                              handsFreeMode
+                                ? "Hands-Free Auto-Send is ON (Sends when you stop speaking)"
+                                : "Hands-Free Auto-Send is OFF"
+                            }
                           >
-                            <Radio size={10} className={handsFreeMode ? "text-violet-400 animate-pulse" : "text-gray-500"} />
-                            <span>VAD Auto-Send: {handsFreeMode ? "ON" : "OFF"}</span>
+                            <Radio
+                              size={10}
+                              className={
+                                handsFreeMode
+                                  ? "text-violet-400 animate-pulse"
+                                  : "text-gray-500"
+                              }
+                            />
+                            <span>
+                              VAD Auto-Send: {handsFreeMode ? "ON" : "OFF"}
+                            </span>
                           </button>
                         </div>
 
@@ -1053,9 +1250,17 @@ export default function MockInterview() {
                                   ? "bg-red-500 text-white animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.5)]"
                                   : "text-gray-400 hover:text-white hover:bg-white/10"
                               }`}
-                            title={isListening ? "Stop voice listening" : "Click to speak your response (Speech-to-Text)"}
+                            title={
+                              isListening
+                                ? "Stop voice listening"
+                                : "Click to speak your response (Speech-to-Text)"
+                            }
                           >
-                            {isListening ? <MicOff size={18} /> : <Mic size={18} />}
+                            {isListening ? (
+                              <MicOff size={18} />
+                            ) : (
+                              <Mic size={18} />
+                            )}
                           </button>
 
                           <textarea
@@ -1071,7 +1276,11 @@ export default function MockInterview() {
                                 handleSendMessage();
                               }
                             }}
-                            placeholder={isListening ? "Speaking..." : "Type or speak your answer... (Press Enter to send)"}
+                            placeholder={
+                              isListening
+                                ? "Speaking..."
+                                : "Type or speak your answer... (Press Enter to send)"
+                            }
                             className="flex-1 bg-transparent border-none text-xs md:text-sm text-gray-200 focus:outline-none resize-none py-2.5 min-h-[40px] max-h-[120px] leading-relaxed"
                             rows={1}
                           />
@@ -1142,18 +1351,26 @@ export default function MockInterview() {
             <div className="p-5 rounded-2xl bg-linear-to-r from-violet-950/40 via-black/40 to-indigo-950/30 border border-violet-500/30 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-xl">
               <div className="flex items-center gap-5">
                 <div className="w-20 h-20 rounded-2xl bg-violet-500/20 border border-violet-500/30 flex flex-col items-center justify-center text-violet-400 shrink-0 shadow-lg">
-                  <span className="text-3xl font-black font-mono leading-none">{scorecard.overallScore}</span>
-                  <span className="text-[9px] uppercase font-bold tracking-widest mt-1">/ 100</span>
+                  <span className="text-3xl font-black font-mono leading-none">
+                    {scorecard.overallScore}
+                  </span>
+                  <span className="text-[9px] uppercase font-bold tracking-widest mt-1">
+                    / 100
+                  </span>
                 </div>
 
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs font-bold uppercase tracking-wider text-violet-400">Readiness Level:</span>
+                    <span className="text-xs font-bold uppercase tracking-wider text-violet-400">
+                      Readiness Level:
+                    </span>
                     <span className="px-2 py-0.2 rounded-md bg-violet-500/20 text-violet-300 text-[10px] font-bold font-mono">
                       Grade {scorecard.grade || "B+"}
                     </span>
                   </div>
-                  <h3 className="text-sm font-bold text-white">{scorecard.readinessLevel}</h3>
+                  <h3 className="text-sm font-bold text-white">
+                    {scorecard.readinessLevel}
+                  </h3>
                   <p className="text-xs text-gray-300 italic mt-1 leading-relaxed">
                     "{scorecard.summaryVerdict}"
                   </p>
@@ -1164,25 +1381,33 @@ export default function MockInterview() {
               {scorecard.pillars && (
                 <div className="grid grid-cols-2 gap-2 text-center shrink-0 w-full sm:w-auto">
                   <div className="p-2 rounded-xl bg-white/[0.03] border border-white/5">
-                    <span className="text-[9px] uppercase font-bold text-gray-400 block">Technical</span>
+                    <span className="text-[9px] uppercase font-bold text-gray-400 block">
+                      Technical
+                    </span>
                     <span className="text-xs font-bold text-violet-400 font-mono">
                       {scorecard.pillars.technicalDepth?.score || 75}%
                     </span>
                   </div>
                   <div className="p-2 rounded-xl bg-white/[0.03] border border-white/5">
-                    <span className="text-[9px] uppercase font-bold text-gray-400 block">Clarity</span>
+                    <span className="text-[9px] uppercase font-bold text-gray-400 block">
+                      Clarity
+                    </span>
                     <span className="text-xs font-bold text-indigo-400 font-mono">
                       {scorecard.pillars.communicationClarity?.score || 80}%
                     </span>
                   </div>
                   <div className="p-2 rounded-xl bg-white/[0.03] border border-white/5">
-                    <span className="text-[9px] uppercase font-bold text-gray-400 block">Problem Solving</span>
+                    <span className="text-[9px] uppercase font-bold text-gray-400 block">
+                      Problem Solving
+                    </span>
                     <span className="text-xs font-bold text-violet-300 font-mono">
                       {scorecard.pillars.problemSolving?.score || 70}%
                     </span>
                   </div>
                   <div className="p-2 rounded-xl bg-white/[0.03] border border-white/5">
-                    <span className="text-[9px] uppercase font-bold text-gray-400 block">Culture Fit</span>
+                    <span className="text-[9px] uppercase font-bold text-gray-400 block">
+                      Culture Fit
+                    </span>
                     <span className="text-xs font-bold text-indigo-300 font-mono">
                       {scorecard.pillars.cultureFit?.score || 85}%
                     </span>
@@ -1196,39 +1421,58 @@ export default function MockInterview() {
               <div className="p-4 rounded-2xl bg-gradient-to-r from-violet-500/10 via-indigo-500/5 to-purple-500/10 border border-violet-500/20 space-y-3">
                 <div className="flex items-center justify-between">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-violet-300 flex items-center gap-1.5">
-                    <Radio size={14} className="text-violet-400 animate-pulse" />
+                    <Radio
+                      size={14}
+                      className="text-violet-400 animate-pulse"
+                    />
                     Speech Delivery & Articulation Telemetry
                   </h4>
                   <span className="text-[10px] font-mono font-bold text-violet-400 bg-violet-500/10 px-2 py-0.5 rounded border border-violet-500/20">
-                    STAR Framework: {scorecard.speechDelivery.starMethodScore ?? 80}%
+                    STAR Framework:{" "}
+                    {scorecard.speechDelivery.starMethodScore ?? 80}%
                   </span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                   <div className="p-2.5 rounded-xl bg-black/40 border border-white/5 space-y-0.5">
-                    <span className="text-[10px] uppercase font-bold text-gray-400 block">Speaking Pacing</span>
+                    <span className="text-[10px] uppercase font-bold text-gray-400 block">
+                      Speaking Pacing
+                    </span>
                     <span className="text-xs font-semibold text-white">
                       {scorecard.speechDelivery.pacing || "Optimal (135 WPM)"}
                     </span>
                   </div>
                   <div className="p-2.5 rounded-xl bg-black/40 border border-white/5 space-y-0.5">
-                    <span className="text-[10px] uppercase font-bold text-gray-400 block">Filler Word Impact</span>
-                    <span className={`text-xs font-semibold ${
-                      scorecard.speechDelivery.fillerWordImpact === 'Minimal' ? 'text-emerald-400' :
-                      scorecard.speechDelivery.fillerWordImpact === 'Moderate' ? 'text-amber-400' : 'text-rose-400'
-                    }`}>
+                    <span className="text-[10px] uppercase font-bold text-gray-400 block">
+                      Filler Word Impact
+                    </span>
+                    <span
+                      className={`text-xs font-semibold ${
+                        scorecard.speechDelivery.fillerWordImpact === "Minimal"
+                          ? "text-emerald-400"
+                          : scorecard.speechDelivery.fillerWordImpact ===
+                              "Moderate"
+                            ? "text-amber-400"
+                            : "text-rose-400"
+                      }`}
+                    >
                       {scorecard.speechDelivery.fillerWordImpact || "Minimal"}
                     </span>
                   </div>
                   <div className="p-2.5 rounded-xl bg-black/40 border border-white/5 space-y-0.5">
-                    <span className="text-[10px] uppercase font-bold text-gray-400 block">STAR Structure</span>
+                    <span className="text-[10px] uppercase font-bold text-gray-400 block">
+                      STAR Structure
+                    </span>
                     <span className="text-xs font-semibold text-indigo-300">
-                      {scorecard.speechDelivery.starMethodScore ?? 80}% Adherence
+                      {scorecard.speechDelivery.starMethodScore ?? 80}%
+                      Adherence
                     </span>
                   </div>
                 </div>
                 {scorecard.speechDelivery.deliveryTip && (
                   <p className="text-[11px] text-gray-300 italic bg-white/[0.02] p-2 rounded-lg border border-white/5">
-                    <span className="font-bold text-violet-400 not-italic mr-1.5">Recruiter Delivery Tip:</span>
+                    <span className="font-bold text-violet-400 not-italic mr-1.5">
+                      Recruiter Delivery Tip:
+                    </span>
                     "{scorecard.speechDelivery.deliveryTip}"
                   </p>
                 )}
@@ -1270,12 +1514,18 @@ export default function MockInterview() {
             {scorecard.studyPlan && scorecard.studyPlan.length > 0 && (
               <div className="p-4 rounded-2xl bg-violet-500/5 border border-violet-500/15 space-y-2.5">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-violet-300 flex items-center gap-1.5">
-                  <BookOpen size={13} /> Recommended Preparation Topics Before Next Round
+                  <BookOpen size={13} /> Recommended Preparation Topics Before
+                  Next Round
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                   {scorecard.studyPlan.map((topic, i) => (
-                    <div key={i} className="p-2 rounded-xl bg-black/40 border border-white/5 text-gray-200 flex items-start gap-2">
-                      <span className="text-violet-400 font-bold font-mono">0{i + 1}.</span>
+                    <div
+                      key={i}
+                      className="p-2 rounded-xl bg-black/40 border border-white/5 text-gray-200 flex items-start gap-2"
+                    >
+                      <span className="text-violet-400 font-bold font-mono">
+                        0{i + 1}.
+                      </span>
                       <span>{topic}</span>
                     </div>
                   ))}
@@ -1284,36 +1534,45 @@ export default function MockInterview() {
             )}
 
             {/* Question by Question Review */}
-            {scorecard.questionReviews && scorecard.questionReviews.length > 0 && (
-              <div className="space-y-3">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400">
-                  Question-by-Question Diagnostic Review
-                </h4>
+            {scorecard.questionReviews &&
+              scorecard.questionReviews.length > 0 && (
                 <div className="space-y-3">
-                  {scorecard.questionReviews.map((rev, idx) => (
-                    <div key={idx} className="p-3.5 rounded-2xl bg-black/40 border border-white/10 space-y-2 text-xs">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-violet-300">Question {idx + 1}</span>
-                        <span className="px-2 py-0.2 rounded-md bg-white/5 border border-white/5 text-[10px] font-mono font-bold text-violet-400">
-                          Score: {rev.score}/10
-                        </span>
-                      </div>
-                      <p className="text-gray-200 font-medium">"{rev.question}"</p>
-                      {rev.candidateAnswer && (
-                        <p className="text-gray-400 text-[11px] italic pl-2 border-l border-white/10">
-                          Your response: "{rev.candidateAnswer}"
-                        </p>
-                      )}
-                      {rev.idealAnswerFramework && (
-                        <div className="p-2 rounded-xl bg-emerald-500/5 border border-emerald-500/15 text-emerald-200 text-[11px]">
-                          <strong>Ideal Answer Framework:</strong> {rev.idealAnswerFramework}
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400">
+                    Question-by-Question Diagnostic Review
+                  </h4>
+                  <div className="space-y-3">
+                    {scorecard.questionReviews.map((rev, idx) => (
+                      <div
+                        key={idx}
+                        className="p-3.5 rounded-2xl bg-black/40 border border-white/10 space-y-2 text-xs"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-violet-300">
+                            Question {idx + 1}
+                          </span>
+                          <span className="px-2 py-0.2 rounded-md bg-white/5 border border-white/5 text-[10px] font-mono font-bold text-violet-400">
+                            Score: {rev.score}/10
+                          </span>
                         </div>
-                      )}
-                    </div>
-                  ))}
+                        <p className="text-gray-200 font-medium">
+                          "{rev.question}"
+                        </p>
+                        {rev.candidateAnswer && (
+                          <p className="text-gray-400 text-[11px] italic pl-2 border-l border-white/10">
+                            Your response: "{rev.candidateAnswer}"
+                          </p>
+                        )}
+                        {rev.idealAnswerFramework && (
+                          <div className="p-2 rounded-xl bg-emerald-500/5 border border-emerald-500/15 text-emerald-200 text-[11px]">
+                            <strong>Ideal Answer Framework:</strong>{" "}
+                            {rev.idealAnswerFramework}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {/* Modal Bottom CTA */}
             <div className="pt-2 flex justify-end gap-2.5">
@@ -1346,7 +1605,9 @@ export default function MockInterview() {
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <div className="flex items-center gap-2">
                 <History size={16} className="text-violet-400" />
-                <h3 className="text-base font-bold text-white">Interview History</h3>
+                <h3 className="text-base font-bold text-white">
+                  Interview History
+                </h3>
               </div>
               <button
                 onClick={() => setShowHistoryModal(false)}
@@ -1358,9 +1619,13 @@ export default function MockInterview() {
 
             <div className="flex-1 overflow-y-auto space-y-2 pr-1 no-scrollbar">
               {isLoadingHistory ? (
-                <div className="py-12 text-center text-gray-400 text-xs">Loading history...</div>
+                <div className="py-12 text-center text-gray-400 text-xs">
+                  Loading history...
+                </div>
               ) : historyList.length === 0 ? (
-                <div className="py-12 text-center text-gray-400 text-xs">No past interviews found.</div>
+                <div className="py-12 text-center text-gray-400 text-xs">
+                  No past interviews found.
+                </div>
               ) : (
                 historyList.map((item) => (
                   <div
@@ -1373,7 +1638,8 @@ export default function MockInterview() {
                         {item.role}
                       </p>
                       <p className="text-[10px] text-gray-500 font-mono mt-0.5">
-                        {item.type} • {item.difficulty} • {formatTime(item.duration_seconds || 0)}
+                        {item.type} • {item.difficulty} •{" "}
+                        {formatTime(item.duration_seconds || 0)}
                       </p>
                     </div>
 
