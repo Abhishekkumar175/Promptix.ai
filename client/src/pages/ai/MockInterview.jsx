@@ -479,6 +479,52 @@ export default function MockInterview() {
     }
   };
 
+  // Resume an active past interview session
+  const handleResumePastSession = async (pastSessionId) => {
+    try {
+      const res = await api.get(`/api/interview/${pastSessionId}`);
+      if (res.success && res.session) {
+        setCurrentSession(res.session);
+        setRole(res.session.role || "");
+        setType(res.session.type || "tech");
+        setDifficulty(res.session.difficulty || "Mid-Level");
+        setElapsedTime(res.session.duration_seconds || 0);
+        setCurrentPhase(res.session.current_phase || 1);
+
+        const loadedMessages = (res.messages || []).map((m) => ({
+          id: m.id,
+          role: m.role,
+          text: m.content,
+          microFeedback: m.micro_feedback,
+        }));
+        setMessages(loadedMessages);
+        setSessionState("active");
+        setShowHistoryModal(false);
+      }
+    } catch (err) {
+      console.error("Failed to resume session:", err);
+    }
+  };
+
+  // Finalize an active session and generate its scorecard
+  const handleFinalizePastSession = async (pastSessionId, e) => {
+    e?.stopPropagation();
+    try {
+      setIsLoadingHistory(true);
+      const res = await api.post(`/api/interview/${pastSessionId}/finish`, {});
+      if (res.success && res.scorecard) {
+        setScorecard(res.scorecard);
+        setShowScorecardModal(true);
+        setShowHistoryModal(false);
+        fetchHistory();
+      }
+    } catch (err) {
+      console.error("Failed to finalize session:", err);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
+
   // Open past interview report from history
   const handleOpenPastReport = async (pastSession) => {
     try {
@@ -487,8 +533,20 @@ export default function MockInterview() {
         setScorecard(res.session.scorecard);
         setShowScorecardModal(true);
         setShowHistoryModal(false);
-      } else {
-        alert("This past interview does not have a generated scorecard.");
+      } else if (res.success && res.session) {
+        // If it's an active/in-progress session without scorecard
+        if ((res.messages || []).length > 1) {
+          const finalizeNow = window.confirm(
+            "This interview was left in progress. Would you like to generate the diagnostic report now? (Click 'Cancel' to resume and continue the interview)"
+          );
+          if (finalizeNow) {
+            handleFinalizePastSession(pastSession.id);
+          } else {
+            handleResumePastSession(pastSession.id);
+          }
+        } else {
+          handleResumePastSession(pastSession.id);
+        }
       }
     } catch (err) {
       console.error("Failed to load past session details:", err);
@@ -1645,20 +1703,39 @@ export default function MockInterview() {
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                       {item.overall_score ? (
                         <span className="px-2.5 py-1 rounded-lg text-xs font-bold font-mono bg-violet-500/15 border border-violet-500/30 text-violet-300">
                           {item.overall_score}/100
                         </span>
                       ) : (
-                        <span className="px-2 py-0.5 rounded-md text-[10px] font-mono bg-white/5 text-gray-500">
-                          {item.status}
-                        </span>
+                        <div
+                          className="flex items-center gap-1.5"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-mono bg-amber-500/10 border border-amber-500/20 text-amber-300">
+                            In Progress
+                          </span>
+                          <button
+                            onClick={() => handleResumePastSession(item.id)}
+                            className="px-2 py-1 rounded-md text-[10px] font-semibold bg-violet-600/30 hover:bg-violet-600/50 border border-violet-500/30 text-violet-200 transition-all cursor-pointer"
+                            title="Resume Interview"
+                          >
+                            Resume
+                          </button>
+                          <button
+                            onClick={(e) => handleFinalizePastSession(item.id, e)}
+                            className="px-2 py-1 rounded-md text-[10px] font-semibold bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/30 text-emerald-200 transition-all cursor-pointer"
+                            title="Generate Scorecard"
+                          >
+                            Get Report
+                          </button>
+                        </div>
                       )}
 
                       <button
                         onClick={(e) => handleDeletePastSession(item.id, e)}
-                        className="p-1.5 rounded-lg text-gray-400 hover:text-rose-400 hover:bg-rose-500/20 transition-all"
+                        className="p-1.5 rounded-lg text-gray-400 hover:text-rose-400 hover:bg-rose-500/20 transition-all cursor-pointer"
                         title="Delete session"
                       >
                         <Trash2 size={13} />
