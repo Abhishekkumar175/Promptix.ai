@@ -41,32 +41,32 @@ async function callModel(prompt, jsonMode = true) {
 }
 
 export const INTERVIEW_PHASES = [
-  { id: 1, name: "Background & Alignment", targetQuestions: 2, description: "Candidate introduction, verification of resume accomplishments, motivations and fit." },
-  { id: 2, name: "Core Competency Drilldown", targetQuestions: 2, description: "Deep technical examination, core algorithms, design choices, or STAR behavioral leadership." },
-  { id: 3, name: "Pressure & Edge Cases", targetQuestions: 2, description: "Extreme scale (100x traffic), distributed failure modes, concurrency, pushbacks and trade-offs." },
-  { id: 4, name: "Reverse Q&A & Wrap-Up", targetQuestions: 1, description: "Candidate poses strategic questions, interviewer evaluates business acumen and concludes round." }
+  { id: 1, name: "Warm Intro & Background", targetQuestions: 2, description: "Warm introduction, background overview, career journey, and initial project highlight." },
+  { id: 2, name: "Core Competency Drilldown", targetQuestions: 2, description: "Deep dive into core architecture, implementation trade-offs, algorithms, or technical design." },
+  { id: 3, name: "Pressure & Edge Cases", targetQuestions: 2, description: "Real-world scale (100x load spikes), distributed failures, debugging, and edge-case handling." },
+  { id: 4, name: "Reverse Q&A & Wrap-Up", targetQuestions: 1, description: "Candidate strategic questions, company/team dynamics, and final wrap-up." }
 ];
 
 /**
  * 1. Generate opening question tailored to role, type, difficulty, and candidate resume
  */
 export async function generateOpeningQuestion({ role, type = "tech", difficulty = "Mid-Level", resumeContext = null }) {
-  const prompt = `You are an elite Senior Staff Engineering Director and Hiring Manager conducting a realistic, structured mock interview.
+  const prompt = `You are a warm, highly experienced Senior Engineering Hiring Manager at a premier tech company conducting a mock interview.
 
 INTERVIEW CONFIGURATION:
 - Target Role: "${role}"
 - Interview Type: "${type}" (tech: technical coding & concepts | behavioral: leadership, STAR, team dynamics | system: architecture, scalability, tradeoffs)
 - Target Seniority Level: "${difficulty}"
-${resumeContext?.resumeName ? `- Candidate Resume Context: Profile: "${resumeContext.summary || ''}", Verified Key Skills: [${(resumeContext.keySkills || []).join(', ')}]` : ''}
+${resumeContext?.resumeName ? `- Candidate Resume: Profile: "${resumeContext.summary || ''}", Key Skills: [${(resumeContext.keySkills || []).join(', ')}]` : ''}
 
-STRUCTURE:
-We are starting Phase 1: "Background & Alignment".
-- Greet the candidate warmly and professionally as their Lead Interviewer.
-- Mention that this session is structured into 4 stages: Background, Core Technical Drilldown, Pressure Scenarios, and Candidate Q&A.
-- Ask a high-impact opening question relevant to ${role} (and their resume skills if available), asking them to walk through their most impactful technical project or core architecture experience.
-- Keep the tone polite, engaging, and authoritative.
+OBJECTIVE:
+Start the interview naturally, warmly, and realistically — just like a real-world human interviewer.
+- Do NOT jump directly into difficult technical problems, complex architecture questions, or deep project grilling yet.
+- Welcome the candidate warmly and thank them for joining today's session.
+- Ask them for a relaxed, natural self-introduction: their background, their journey into ${role}, and what technologies or projects they have been focusing on recently.
+- Keep the tone welcoming, conversational, and natural (2 to 3 sentences maximum).
 
-Respond with ONLY the opening question text (2-3 sentences). No JSON, no markdown tags.`;
+Respond with ONLY the spoken greeting and opening intro question. No JSON, no quotes, no markdown headers.`;
 
   try {
     const raw = await callModel(prompt, false);
@@ -74,12 +74,12 @@ Respond with ONLY the opening question text (2-3 sentences). No JSON, no markdow
   } catch (err) {
     console.warn("Opening question generation fallback:", err.message);
     if (type === "system") {
-      return `Welcome! I'm your interviewer today. We'll be conducting a 4-phase ${difficulty} System Design interview for the ${role} position. To start Phase 1, could you introduce yourself and walk me through the most complex distributed system you have designed or maintained?`;
+      return `Hi, great to meet you today! Thanks for joining our ${difficulty} System Design session for the ${role} position. To kick things off naturally, could you give me a brief introduction of yourself, your background, and the kind of architectures or systems you've been working with recently?`;
     }
     if (type === "behavioral") {
-      return `Welcome! I'll be leading your ${difficulty} behavioral screening for the ${role} position across our 4 interview stages. Let's start with Phase 1: Could you walk me through your background and describe a project where your individual leadership was critical to success?`;
+      return `Hi, great to connect with you! Thanks for taking the time to meet for our ${difficulty} ${role} interview. To get started, I'd love to hear a bit about your journey so far, your background, and what kind of work you're most passionate about.`;
     }
-    return `Welcome! I'll be your technical interviewer today for the ${role} position (${difficulty} level). We'll progress through 4 structured phases today. To kick off Phase 1, could you give me a brief overview of your technical background and highlight an engineering challenge you solved recently?`;
+    return `Hi, great to meet you today! Thanks for taking the time to join our ${difficulty} ${role} interview. To kick things off smoothly, could you give me a brief introduction of yourself, your journey as a developer, and what you've been working on or enjoying lately?`;
   }
 }
 
@@ -127,7 +127,7 @@ export async function processInterviewTurn({
     .slice(-8)
     .join("\n\n");
 
-  const prompt = `You are an elite Senior Staff Interviewer evaluating a candidate's answer in a live mock interview.
+  const prompt = `You are an elite, empathetic, and sharp Senior Engineering Hiring Manager conducting a live mock interview.
 
 INTERVIEW SPECIFICATIONS:
 - Role: "${role}"
@@ -143,33 +143,42 @@ ${formattedHistory}
 CANDIDATE'S LATEST ANSWER:
 """${userResponse}"""
 
-YOUR EVALUATION OBJECTIVES:
-1. Turn-by-Turn Micro-Evaluation:
-   - score (0-10): Technical depth, precision, clarity, and relevance for this turn.
-   - positive: 1 concise sentence highlighting what the candidate explained well.
-   - missing: 1 concise sentence highlighting missing technical trade-offs, edge cases, metrics, or architectural nuances.
-   - suggestion: 1 practical pro-tip for real interview scenarios.
-   - starRating: If behavioral or experiential, evaluate whether they gave Situation, Task, Action, and quantifiable Result.
-2. Next Question Strategy:
-   - Keep the interview in Phase ${targetPhase}: "${currentPhaseDef.name}".
-   - If transitioning to Phase 2, move from general background to deep technical implementation details, data models, or core algorithms.
-   - If in Phase 3, introduce pressure or failure scenarios: "What if traffic surges 100x? What if the primary database partition fails? How do you maintain consistency?"
-   - If in Phase 4, invite the candidate: "We're in the final wrap-up phase. What questions do you have for me about the team, the architecture, or our engineering practices?"
-   - Keep the next question sharp, conversational, and direct (1-3 sentences).
-3. isReadyToEnd: boolean (true if in Phase 4 and candidate has asked questions, or questionCount >= 6).
+INTERACTION & EVALUATION RULES:
+1. AUDIO / CONNECTIVITY TEST HANDLING:
+   - If the candidate's latest response is an audio check or greeting (e.g. "am I audible", "can you hear me", "hello", "hi"), do NOT fail them or give 0.
+   - Acknowledge warmly as a human: confirm you can hear them loud and clear, and proceed with the introductory question.
+   - Return score: 8, positive: "Audio connectivity confirmed.", missing: "Ready for self-introduction.", suggestion: "Speak clearly and naturally."
+
+2. NATURAL CONVERSATIONAL PROGRESSION:
+   - Turn 1 (After candidate gives their introduction):
+     - Acknowledge their background warmly with 1 brief conversational sentence (e.g. "Thanks for sharing that, Abhishek! It's great to hear about your experience with React and modern web development.").
+     - Ask a natural follow-up: "Could you walk me through one specific project or product you built recently that you're most proud of, and what your exact ownership was?"
+   - Turn 2 (After candidate describes their project):
+     - Acknowledge what they built, then ask a targeted technical follow-up about that specific project (e.g. "When architecting that, what were some of the key trade-offs you considered, or how did you handle state management / caching / data fetching?").
+   - Turns 3-4 (Phase 2 - Core Competency Drilldown):
+     - Transition smoothly into deeper technical challenges: "Now let's dive into some deeper technical problems..." (ask targeted questions on algorithms, system components, framework internals, or design patterns).
+   - Turns 5-6 (Phase 3 - Pressure & Edge Cases):
+     - Introduce realistic production scale or edge cases: "Imagine traffic suddenly spikes 50x or an API service times out. How would your architecture handle it?"
+   - Turn 7 (Phase 4 - Candidate Q&A & Wrap-Up):
+     - Invite the candidate: "We're nearing the end of our time today. What questions do you have for me about the team, our engineering culture, or the tech stack?"
+
+3. TONE & DELIVERY:
+   - Always sound like a warm, supportive yet rigorous human interviewer.
+   - Acknowledge what the candidate just said before asking the next question.
+   - Keep "nextQuestion" conversational and focused (2-3 sentences max).
 
 Respond ONLY with strictly valid JSON matching this schema:
 {
   "microFeedback": {
     "score": <number 0-10>,
-    "positive": "<string>",
-    "missing": "<string>",
-    "suggestion": "<string>",
+    "positive": "<string: 1 constructive sentence on what they explained well>",
+    "missing": "<string: 1 constructive sentence on trade-offs, metrics, or nuances they could add>",
+    "suggestion": "<string: 1 practical tip>",
     "clarityScore": <number 0-100>
   },
   "nextPhase": ${targetPhase},
   "phaseLabel": "${currentPhaseDef.name}",
-  "nextQuestion": "<string: the interviewer's next spoken question>",
+  "nextQuestion": "<string: conversational acknowledgment + next question>",
   "isReadyToEnd": <boolean>
 }`;
 
