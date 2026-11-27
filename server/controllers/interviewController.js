@@ -51,7 +51,7 @@ export const startSession = async (req, res) => {
       session,
       openingMessage: aiMessage,
       currentPhase: 1,
-      phaseLabel: "Background & Alignment",
+      phaseLabel: "Warm Intro & Background",
       questionNumber: 1,
       totalExpectedQuestions: 6,
     });
